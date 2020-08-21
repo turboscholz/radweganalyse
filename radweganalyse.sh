@@ -26,13 +26,13 @@ ACCELEROMETERFILE="Accelerometer.csv"
 
 # First we have to resample the location measurements. This is needed
 # because the gps posistion is tracked with a much lower frequency than
-# the acceleration of the smartphone:
-COORDS=$(mktemp /tmp/location.XXXXXX)
-ACCLS=$(mktemp /tmp/acceleration.XXXXXX)
-ACCLS2=$(mktemp /tmp/acceleration2.XXXXXX)
-COORDS_RESAMPLED=$(mktemp /tmp/location_resampled.XXXXXX)
-MERGED=$(mktemp /tmp/merged_accel_and_locs.XXXXXX)
-MERGED2=$(mktemp /tmp/merged_accel_and_locs2.XXXXXX)
+# the acceleration sensor of the smartphone:
+COORDS=$(mktemp /tmp/XXXXXX)
+ACCLS=$(mktemp /tmp/XXXXXX)
+ACCLS2=$(mktemp /tmp/XXXXXX)
+COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
+MERGED=$(mktemp /tmp/XXXXXX)
+MERGED2=$(mktemp /tmp/XXXXXX)
 
 # Just leave the time and acceleration in z-direction
 cut $ACCELEROMETERFILE -d, -f1,4 > $ACCLS
