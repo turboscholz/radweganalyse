@@ -71,7 +71,7 @@ sed -i '/^,/d' $MERGED
 
 # With time is commented out currently: This file can be used later to analyze the data with a Python script
 cut -d, -f1-5 $MERGED > $MERGED2
-sed -i '1i time, y, x, speed, z' $MERGED2 # Include header
+sed -i '1i time, lat, long, speed, z' $MERGED2 # Include header
 mv $MERGED2 ./xyz_data_with_time.csv
 
 cut -d, -f2,3,4,5 $MERGED > $MERGED2
