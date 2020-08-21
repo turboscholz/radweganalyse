@@ -18,11 +18,20 @@ set -x
 LOCATIONFILE="Location.csv"
 ACCELEROMETERFILE="Accelerometer.csv"
 
-#WITHTIME=false
-#
-#if [ $# == 1 ]; then
-#    WITHTIME=true
-#fi
+# Parse the arguments, see https://stackoverflow.com/a/14203146
+for i in "$@"
+do
+case $i in
+    --unresampled)
+    UNRESAMPLED=YES
+    shift # past argument with no value
+    ;;
+    *)
+          # unknown option
+    ;;
+esac
+done
+echo "UNRESAMPLED = ${UNRESAMPLED}"
 
 # First we have to resample the location measurements. This is needed
 # because the gps posistion is tracked with a much lower frequency than
@@ -68,8 +77,28 @@ mv $MERGED2 ./xyz_data_with_time.csv
 cut -d, -f2,3,4,5 $MERGED > $MERGED2
 sed -i '1i y, x, speed, z' $MERGED2 # Include header
 
+# Create the gpx file with acceleration data
 gpsbabel -t -i unicsv -f $MERGED2 -o gpx -F xyz_data.gpx
 
+# Create the unresampled gpx file (from the original data)
+if [ $UNRESAMPLED == "YES" ]; then
+    COORDS_WO_TIME=$(mktemp /tmp/XXXXXX)
+    cut -d, -f2,3 $COORDS > $COORDS_WO_TIME
+    COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
+    OLDIFS=$IFS
+    echo $OLDIFS
+    IFS=','
+    while read LAT LON
+    do
+	LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
+	LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
+	echo "$LAT_CONV, $LON_CONV" >> $COORDS_WO_TIME_CONVERTED
+    done < $COORDS_WO_TIME
+    IFS=$OLDIFS
+
+    sed -i '1i lat, long' $COORDS_WO_TIME_CONVERTED # Include header
+    gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F xyz_data_unresampled.gpx
+fi
 
 #  <wpt lat="49.989805" lon="8.675115">
 #      <time>2020-08-19T12:14:22Z</time>
@@ -78,10 +107,12 @@ gpsbabel -t -i unicsv -f $MERGED2 -o gpx -F xyz_data.gpx
 #      <desc>description</desc>
 #  </wpt>
 
-      
+
 rm $ACCLS
 rm $COORDS
 rm $ACCLS2
 rm $MERGED
 rm $MERGED2
 rm $COORDS_RESAMPLED
+rm $COORDS_WO_TIME
+rm $COORDS_WO_TIME_CONVERTED
