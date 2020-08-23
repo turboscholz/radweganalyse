@@ -68,20 +68,12 @@ if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
     ACCELEROMETERFILE="${ACCELEROMETERFILE_ARG}"
 fi
 
-# First we have to resample the location measurements. This is needed
-# because the gps posistions are tracked with a much lower frequency than
-# the acceleration sensor of the smartphone:
-COORDS=$(mktemp /tmp/XXXXXX)
-ACCLS=$(mktemp /tmp/XXXXXX)
-ACCLS2=$(mktemp /tmp/XXXXXX)
-COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
-MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
-MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
-
 # Just leave the time and acceleration in z-direction
+ACCLS=$(mktemp /tmp/XXXXXX)
 cut $ACCELEROMETERFILE -d, -f1,4 > $ACCLS
 
 # Leave time, latitude, longitue, speed
+COORDS=$(mktemp /tmp/XXXXXX)
 cut $LOCATIONFILE -d, -f1-3,5 > $COORDS
 
 # Store header line for later usage
@@ -92,23 +84,33 @@ HEADERACC="$(head -n1 $ACCELEROMETERFILE)"
 sed -i '1d;' $ACCLS
 sed -i '1d;' $COORDS
 
+COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
 gmt sample1d -s $COORDS -T${ACCLS} > $COORDS_RESAMPLED
 
-# Remove unnecessary timestamps from acceleration file
-cut $ACCLS -d, -f2 > $ACCLS2
+# Remove timestamps from acceleration file
+Z_ACCELS=$(mktemp /tmp/XXXXXX)
+cut $ACCLS -d, -f2 > $Z_ACCELS
+
+rm $ACCLS
 
 sed -i 's/\t/, /g;' $COORDS_RESAMPLED
 
 MERGED=$(mktemp /tmp/XXXXXX)
-paste -d, $COORDS_RESAMPLED $ACCLS2 > $MERGED
+paste -d, $COORDS_RESAMPLED $Z_ACCELS > $MERGED
+rm $COORDS_RESAMPLED
+rm $Z_ACCELS
 
 # Remove lines which start with a comma after merging
 sed -i '/^,/d' $MERGED
 
-# With time is commented out currently: This file can be used later to analyze the data with a Python script
+# This file can be used later to analyze the data with a Python script
+MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
 cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
 sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
 
+# This file will be used to export the final results to
+# We don't need time information it it.
+MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
 cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
 sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
 rm $MERGED
@@ -116,6 +118,7 @@ rm $MERGED
 # Create the gpx file with acceleration data
 MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
 gpsbabel -t -i unicsv -f $MERGED_WO_TIME -o gpx -F $MERGED_WO_TIME_GPX
+rm $MERGED_WO_TIME
 
 # Create the unresampled gpx file (from the original data)
 if [ $UNRESAMPLED == "YES" ]; then
@@ -140,6 +143,8 @@ if [ $UNRESAMPLED == "YES" ]; then
     rm $COORDS_WO_TIME_CONVERTED
 fi
 
+rm $COORDS
+
 # Get the coordinates with the highest z values in a seperate gpx file
 HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 
@@ -147,6 +152,7 @@ HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 python "$SCRIPTPATH"/acceleration_selection.py $MERGED_WITH_TIME 5 2 $HIGH_Z_COORDS
+rm $MERGED_WITH_TIME
 TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
 cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
 TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
@@ -156,17 +162,11 @@ rm $TIME_SORTED_Z_COORDS
 
 # Merge the last gpx into the first one and create a seperate output file
 gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gpx -F $OUTPUTFILENAME
+rm $MERGED_WO_TIME_GPX
 
 if [ $UNRESAMPLED == "YES" ]; then
     gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
     rm $COORDS_WO_TIME_CONVERTED_GPX
 fi
 
-rm $ACCLS
-rm $COORDS
-rm $ACCLS2
-rm $MERGED_WITH_TIME
-rm $MERGED_WO_TIME
-rm $COORDS_RESAMPLED
-rm $MERGED_WO_TIME_GPX
 rm $TIME_SORTED_Z_COORDS_GPX
