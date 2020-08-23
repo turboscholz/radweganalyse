@@ -142,6 +142,7 @@ gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gp
 
 if [ $UNRESAMPLED == "YES" ]; then
     gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+    rm $COORDS_WO_TIME_CONVERTED_GPX
 fi
 
 rm $ACCLS
@@ -152,4 +153,3 @@ rm $MERGED_WO_TIME
 rm $COORDS_RESAMPLED
 rm $MERGED_WO_TIME_GPX
 rm $TIME_SORTED_Z_COORDS_GPX
-rm $COORDS_WO_TIME_CONVERTED_GPX
