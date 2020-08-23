@@ -45,8 +45,8 @@ COORDS=$(mktemp /tmp/XXXXXX)
 ACCLS=$(mktemp /tmp/XXXXXX)
 ACCLS2=$(mktemp /tmp/XXXXXX)
 COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
-MERGED=$(mktemp /tmp/XXXXXX)
-MERGED2=$(mktemp /tmp/XXXXXX)
+MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
+MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
 
 # Just leave the time and acceleration in z-direction
 cut $ACCELEROMETERFILE -d, -f1,4 > $ACCLS
@@ -69,21 +69,23 @@ cut $ACCLS -d, -f2 > $ACCLS2
 
 sed -i 's/\t/, /g;' $COORDS_RESAMPLED
 
+MERGED=$(mktemp /tmp/XXXXXX)
 paste -d, $COORDS_RESAMPLED $ACCLS2 > $MERGED
 
 # Remove lines which start with a comma after merging
 sed -i '/^,/d' $MERGED
 
 # With time is commented out currently: This file can be used later to analyze the data with a Python script
-cut -d, -f1-5 $MERGED > $MERGED2
-sed -i '1i time, lat, long, speed, z' $MERGED2 # Include header
-mv $MERGED2 ./xyz_data_with_time.csv
+cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
+sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
 
-cut -d, -f2,3,4,5 $MERGED > $MERGED2
-sed -i '1i y, x, speed, z' $MERGED2 # Include header
+cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
+sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
+rm $MERGED
 
 # Create the gpx file with acceleration data
-gpsbabel -t -i unicsv -f $MERGED2 -o gpx -F xyz_data.gpx
+MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
+gpsbabel -t -i unicsv -f $MERGED_WO_TIME -o gpx -F $MERGED_WO_TIME_GPX
 
 # Create the unresampled gpx file (from the original data)
 if [ $UNRESAMPLED == "YES" ]; then
@@ -116,8 +118,9 @@ fi
 rm $ACCLS
 rm $COORDS
 rm $ACCLS2
-rm $MERGED
-rm $MERGED2
+rm $MERGED_WITH_TIME
+rm $MERGED_WO_TIME
 rm $COORDS_RESAMPLED
-rm $COORDS_WO_TIME
-rm $COORDS_WO_TIME_CONVERTED
+rm $MERGED_WO_TIME_GPX
+rm $TIME_SORTED_Z_COORDS_GPX
+rm $COORDS_WO_TIME_CONVERTED_GPX
