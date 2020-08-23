@@ -23,6 +23,14 @@ OUTPUTFILENAME="xyz_data.gpx"
 LOCATIONFILE="Location.csv"
 ACCELEROMETERFILE="Accelerometer.csv"
 #
+# The number of gps positions this script should find where the acceleration
+# in z direction is exceptional
+BAD_STREET_POSITIONS="5"
+#
+# The time window in seconds in which a no other value with high z accelerations
+# will be searched
+TIME_WINDOW="2"
+#
 # Do not create a gpx file with unresampled coordinate data
 UNRESAMPLED=NO
 
@@ -42,6 +50,16 @@ case $i in
     ;;
     -a|--accelerations)
     ACCELEROMETERFILE_ARG="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -b)
+    BAD_STREET_POSITIONS_ARG="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -t)
+    TIME_WINDOW_ARG="$2"
     shift # past argument
     shift # past value
     ;;
@@ -66,6 +84,12 @@ if [ "${LOCATIONFILE_ARG}" != "" ]; then
 fi
 if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
     ACCELEROMETERFILE="${ACCELEROMETERFILE_ARG}"
+fi
+if [ "${BAD_STREET_POSITIONS_ARG}" != "" ]; then
+    BAD_STREET_POSITIONS="${BAD_STREET_POSITIONS_ARG}"
+fi
+if [ "${TIME_WINDOW_ARG}" != "" ]; then
+    TIME_WINDOW="${TIME_WINDOW_ARG}"
 fi
 
 # Just leave the time and acceleration in z-direction
@@ -150,10 +174,14 @@ HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 # Get the path of this script
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-python "$SCRIPTPATH"/acceleration_selection.py $MERGED_WITH_TIME 5 2 $HIGH_Z_COORDS
+# Find the gps coordinates where the highest z acceleration values happened
+python "$SCRIPTPATH"/acceleration_selection.py $MERGED_WITH_TIME $BAD_STREET_POSITIONS $TIME_WINDOW $HIGH_Z_COORDS
+
 rm $MERGED_WITH_TIME
+
 TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
 cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
+
 TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
 gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $TIME_SORTED_Z_COORDS_GPX
 rm $HIGH_Z_COORDS
