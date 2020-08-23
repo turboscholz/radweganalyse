@@ -126,7 +126,6 @@ if [ $UNRESAMPLED == "YES" ]; then
     cut -d, -f2,3 $COORDS > $COORDS_WO_TIME
     COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
     OLDIFS=$IFS
-    echo $OLDIFS
     IFS=','
     while read LAT LON
     do
