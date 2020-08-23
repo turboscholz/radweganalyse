@@ -13,15 +13,15 @@ set -e
 # Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 #               python for finding largest values, pandas python package
 
+# Default values (adjustable by user options):
+#
 # The output file name can be overridden by the -o option
 OUTPUTFILENAME="xyz_data.gpx"
-
+#
 # These are the files of the phybox experiment used as input here
 # Their names can be overridden by -l and -a options
 LOCATIONFILE="Location.csv"
 ACCELEROMETERFILE="Accelerometer.csv"
-
-# Defaultvalues:
 #
 # Do not create a gpx file with unresampled coordinate data
 UNRESAMPLED=NO
