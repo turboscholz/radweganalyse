@@ -13,9 +13,16 @@ set -e
 # to see how the bike lane quality is and where problematic locations are
 # "hidden" on the bike path.
 
+OUTPUTFILENAME="xyz_data.gpx"
+
 # These are the output files of the phybox experiment
 LOCATIONFILE="Location.csv"
 ACCELEROMETERFILE="Accelerometer.csv"
+
+# Defaultvalues:
+#
+# Do not create a gpx file with unresampled coordinate data
+UNRESAMPLED=NO
 
 # Parse the arguments, see https://stackoverflow.com/a/14203146
 for i in "$@"
@@ -30,7 +37,6 @@ case $i in
     ;;
 esac
 done
-echo "UNRESAMPLED = ${UNRESAMPLED}"
 
 # First we have to resample the location measurements. This is needed
 # because the gps posistion is tracked with a much lower frequency than
