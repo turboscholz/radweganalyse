@@ -16,7 +16,8 @@ set -e
 # The output file name can be overridden by the -o option
 OUTPUTFILENAME="xyz_data.gpx"
 
-# These are the output files of the phybox experiment
+# These are the files of the phybox experiment used as input here
+# Their names can be overridden by -l and -a options
 LOCATIONFILE="Location.csv"
 ACCELEROMETERFILE="Accelerometer.csv"
 
@@ -31,6 +32,16 @@ do
 case $i in
     -o|--output)
     OUTPUT_ARG="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -l|--locations)
+    LOCATIONFILE_ARG="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -a|--accelerations)
+    ACCELEROMETERFILE_ARG="$2"
     shift # past argument
     shift # past value
     ;;
@@ -49,6 +60,12 @@ done
 
 if [ "${OUTPUT_ARG}" != "" ]; then
     OUTPUTFILENAME="${OUTPUT_ARG}"
+fi
+if [ "${LOCATIONFILE_ARG}" != "" ]; then
+    LOCATIONFILE="${LOCATIONFILE_ARG}"
+fi
+if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
+    ACCELEROMETERFILE="${ACCELEROMETERFILE_ARG}"
 fi
 
 # First we have to resample the location measurements. This is needed
