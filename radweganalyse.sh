@@ -110,13 +110,26 @@ if [ $UNRESAMPLED == "YES" ]; then
     rm $COORDS_WO_TIME_CONVERTED
 fi
 
-#  <wpt lat="49.989805" lon="8.675115">
-#      <time>2020-08-19T12:14:22Z</time>
-#      <name>First</name>
-#      <cmt>comment</cmt>
-#      <desc>description</desc>
-#  </wpt>
+# Get the coordinates with the highest z values in a seperate gpx file
+HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 
+# Get the path of this script
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+python "$SCRIPTPATH"/acceleration_selection.py $MERGED_WITH_TIME 5 2 $HIGH_Z_COORDS
+TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
+cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
+TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
+gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $TIME_SORTED_Z_COORDS_GPX
+rm $HIGH_Z_COORDS
+rm $TIME_SORTED_Z_COORDS
+
+# Merge the last gpx into the first one and create a seperate output file
+gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gpx -F $OUTPUTFILENAME
+
+if [ $UNRESAMPLED == "YES" ]; then
+    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+fi
 
 rm $ACCLS
 rm $COORDS
