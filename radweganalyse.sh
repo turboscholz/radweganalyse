@@ -104,7 +104,10 @@ if [ $UNRESAMPLED == "YES" ]; then
     IFS=$OLDIFS
 
     sed -i '1i lat, long' $COORDS_WO_TIME_CONVERTED # Include header
-    gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F xyz_data_unresampled.gpx
+    COORDS_WO_TIME_CONVERTED_GPX=$(mktemp /tmp/XXXXXX)
+    gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F $COORDS_WO_TIME_CONVERTED_GPX
+    rm $COORDS_WO_TIME
+    rm $COORDS_WO_TIME_CONVERTED
 fi
 
 #  <wpt lat="49.989805" lon="8.675115">
