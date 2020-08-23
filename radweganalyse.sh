@@ -13,6 +13,7 @@ set -e
 # Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 #               python for finding largest values, pandas python package
 
+# The output file name can be overridden by the -o option
 OUTPUTFILENAME="xyz_data.gpx"
 
 # These are the output files of the phybox experiment
@@ -28,6 +29,11 @@ UNRESAMPLED=NO
 for i in "$@"
 do
 case $i in
+    -o|--output)
+    OUTPUT_ARG="$2"
+    shift # past argument
+    shift # past value
+    ;;
     --unresampled)
     UNRESAMPLED=YES
     shift # past argument with no value
@@ -37,6 +43,13 @@ case $i in
     ;;
 esac
 done
+
+
+################################################################################
+
+if [ "${OUTPUT_ARG}" != "" ]; then
+    OUTPUTFILENAME="${OUTPUT_ARG}"
+fi
 
 # First we have to resample the location measurements. This is needed
 # because the gps posistion is tracked with a much lower frequency than
