@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -x
 
 # This sript takes a csv file with acceleration measurements and a csv
 # file with location messurements from the android app "phybox" and
