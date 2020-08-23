@@ -69,7 +69,7 @@ if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
 fi
 
 # First we have to resample the location measurements. This is needed
-# because the gps posistion is tracked with a much lower frequency than
+# because the gps posistions are tracked with a much lower frequency than
 # the acceleration sensor of the smartphone:
 COORDS=$(mktemp /tmp/XXXXXX)
 ACCLS=$(mktemp /tmp/XXXXXX)
