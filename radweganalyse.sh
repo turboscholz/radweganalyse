@@ -2,16 +2,16 @@
 set -e
 
 # This sript takes a csv file with acceleration measurements and a csv
-# file with location messurements from the android app "phybox" and
+# file with location messurements from the Android app "phybox" and
 # generates a gpx file out of it in which the elevation values are actually
 # the z acceleration values.
-
-# Dependencies: GMT's "sample1d", gpsbable, basic linux commands
-#               python for finding largest values
-
+# 
 # Why is this information usefull? It can be used with a standard gpx viewer
 # to see how the bike lane quality is and where problematic locations are
 # "hidden" on the bike path.
+
+# Dependencies: GMT's "sample1d", gpsbable, basic linux commands
+#               python for finding largest values, pandas python package
 
 OUTPUTFILENAME="xyz_data.gpx"
 
