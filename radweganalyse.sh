@@ -128,8 +128,8 @@ MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
 cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
 sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
 
-# This file will be used to export the final results to
-# We don't need time information it it.
+# This file will be used to export the final results to.
+# We don't need time information in it.
 MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
 cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
 sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
