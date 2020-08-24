@@ -100,10 +100,6 @@ cut $ACCELEROMETERFILE -d, -f1,4 > $ACCLS
 COORDS=$(mktemp /tmp/XXXXXX)
 cut $LOCATIONFILE -d, -f1-3,5 > $COORDS
 
-# Store header line for later usage
-HEADERLOC="$(head -n1 $LOCATIONFILE)"
-HEADERACC="$(head -n1 $ACCELEROMETERFILE)"
-
 # Remove the header line from each data file
 sed -i '1d;' $ACCLS
 sed -i '1d;' $COORDS
