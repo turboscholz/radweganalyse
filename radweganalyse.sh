@@ -2,7 +2,7 @@
 set -e
 
 # This sript takes a csv file with acceleration measurements and a csv
-# file with location messurements from the Android app "phybox" and
+# file with location messurements from the Android app "phyphox" and
 # generates a gpx file out of it in which the elevation values are actually
 # the z acceleration values.
 # 
@@ -18,10 +18,17 @@ set -e
 # The output file name can be overridden by the -o option
 OUTPUTFILENAME="xyz_data.gpx"
 #
-# These are the files of the phybox experiment used as input here
+# These are the files of the phyphox experiment used as input here
 # Their names can be overridden by -l and -a options
 LOCATIONFILE="Location.csv"
+#
+# This is the acceleration measurement file from phyphox where the gravitational
+# acceleration is not taken into account
 ACCELEROMETERFILE="Accelerometer.csv"
+#
+# This file is the acceleration measurement from phyphox where the gravitational
+# acceleration is taken into account:
+ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
 #
 # The number of gps positions this script should find where the acceleration
 # in z direction is exceptional
@@ -76,6 +83,19 @@ done
 
 ################################################################################
 
+# Detect which acceleration file is available
+if [ "${ACCELEROMETERFILE_ARG}" == "" ]; then
+    if [ ! -f "$ACCELEROMETERFILE" ]; then
+	if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
+	    echo "Acceleration input file not found"
+	    exit 1
+	else
+	    ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
+	fi
+    fi
+fi
+
+# Assign values of script arguments
 if [ "${OUTPUT_ARG}" != "" ]; then
     OUTPUTFILENAME="${OUTPUT_ARG}"
 fi
@@ -94,7 +114,7 @@ fi
 
 # Just leave the time and acceleration in z-direction
 ACCLS=$(mktemp /tmp/XXXXXX)
-cut $ACCELEROMETERFILE -d, -f1,4 > $ACCLS
+cut "$ACCELEROMETERFILE" -d, -f1,4 > $ACCLS
 
 # Leave time, latitude, longitue, speed
 COORDS=$(mktemp /tmp/XXXXXX)
