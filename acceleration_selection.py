@@ -16,25 +16,53 @@ import pandas as pd
 import sys, getopt
 
 def main(argv):
+    # Get full command-line arguments
+    full_cmd_arguments = argv
+
+    short_options = "hi:o:t:b:"
+    long_options = ["help", "input=", "output=", "timewindow=", "numberofbumps="]
+
     try:
-        input_csv = argv[0]
-        numrow = int(argv[1])
-        timevariation = int(argv[2])
-        #print(len(argv))
-        #print(input_csv, numrow, timevariation)
-        # compute
-        df_selected = fkt_select(input_csv, numrow, timevariation)
-        #print(df_selected.shape)
-        # output
-        if len(argv) == 4:
-            output_csv = argv[3]
-            df_selected.to_csv(output_csv, sep=',', index=False)
-        else:
-            print(df_selected.to_string(index=False))
-    except:
-        print('usage:')
-        print('# python acceleration_selection.py <input.csv> <number of rows>\n'\
-              '# <time difference> <optional: output.csv>')
+        arguments, values = getopt.getopt(full_cmd_arguments, short_options, long_options)
+
+    except getopt.error as err:
+        # Output error, and return with an error code
+        print (str(err))
+        print_usage()
+        sys.exit(2)
+
+    input_csv=""
+    output_csv=""
+    timevariation=0
+    numrow=0
+
+    # Evaluate given options
+    for current_argument, current_value in arguments:
+        if current_argument in ("-h", "--help"):
+            print_usage()
+            sys.exit(0)
+        elif current_argument in ("-i", "--input"):
+            input_csv = current_value
+        elif current_argument in ("-o", "--output"):
+            output_csv = current_value
+        elif current_argument in ("-t", "--timewindow"):
+            timevariation = int(current_value)
+        elif current_argument in ("-b", "--numberofbumps"):
+            numrow = int(current_value)
+
+    df_selected = fkt_select(input_csv, numrow, timevariation)
+
+    # output
+    if output_csv != "":
+        df_selected.to_csv(output_csv, sep=',', index=False)
+    else:
+        print(df_selected.to_string(index=False))
+
+def print_usage():
+    print('usage:')
+    print('# python acceleration_selection.py <input.csv> <number of rows>\n'\
+          '# <time difference> <optional: output.csv>')
+
 
 def fkt_select(input_csv, numrow, timevariation):
     # read csv

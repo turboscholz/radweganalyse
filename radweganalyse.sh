@@ -191,7 +191,7 @@ HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 # Find the gps coordinates where the highest z acceleration values happened
-python "$SCRIPTPATH"/acceleration_selection.py $MERGED_WITH_TIME $BAD_STREET_POSITIONS $TIME_WINDOW $HIGH_Z_COORDS
+python "$SCRIPTPATH"/acceleration_selection.py -i $MERGED_WITH_TIME -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS
 
 rm $MERGED_WITH_TIME
 
