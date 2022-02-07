@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -Eeo pipefail
 
 usage() {
   cat <<EOF
