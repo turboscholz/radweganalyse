@@ -50,74 +50,56 @@ die() {
   exit "$code"
 }
 
-# Default values (adjustable by user options):
-#
-# The output file name can be overridden by the -o option
-OUTPUTFILENAME="xyz_data.gpx"
-#
-# These are the files of the phyphox experiment used as input here
-# Their names can be overridden by -l and -a options
-LOCATIONFILE="Location.csv"
-#
-# This is the acceleration measurement file from phyphox where the gravitational
-# acceleration is not taken into account
-ACCELEROMETERFILE="Accelerometer.csv"
-#
-# This file is the acceleration measurement from phyphox where the gravitational
-# acceleration is taken into account:
-ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
-#
-# The number of gps positions this script should find where the acceleration
-# in z direction is exceptional
-BAD_STREET_POSITIONS="5"
-#
-# The time window in seconds in which a no other value with high z accelerations
-# will be searched
-TIME_WINDOW="2"
-#
-# Do not create a gpx file with unresampled coordinate data
-UNRESAMPLED=NO
+parse_params() {
+  # default values of variables set from params
+  OUTPUTFILENAME="xyz_data.gpx"
+  LOCATIONFILE="Location.csv"
+  ACCELEROMETERFILE="Accelerometer.csv"
+  ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
+  BAD_STREET_POSITIONS="5"
+  TIME_WINDOW="2"
+  UNRESAMPLED=NO
 
-# Parse the arguments, see https://stackoverflow.com/a/14203146
-for i in "$@"
-do
-case $i in
+  while :; do
+    case "${1-}" in
     -h | --help) usage ;;
-    -o|--output)
-    OUTPUT_ARG="$2"
-    shift # past argument
-    shift # past value
-    ;;
-    -l|--locations)
-    LOCATIONFILE_ARG="$2"
-    shift # past argument
-    shift # past value
-    ;;
-    -a|--accelerations)
-    ACCELEROMETERFILE_ARG="$2"
-    shift # past argument
-    shift # past value
-    ;;
-    -b)
-    BAD_STREET_POSITIONS_ARG="$2"
-    shift # past argument
-    shift # past value
-    ;;
-    -t)
-    TIME_WINDOW_ARG="$2"
-    shift # past argument
-    shift # past value
-    ;;
+    -v | --verbose) set -x ;;
+    -o | --output)
+      OUTPUTFILENAME="${2-}"
+      shift
+      ;;
+    -l | --locations)
+      LOCATIONFILE="${2-}"
+      shift
+      ;;
+    -a | --accelerations)
+      ACCELEROMETERFILE="${2-}"
+      shift
+      ;;
+    -b | --bad)
+      BAD_STREET_POSITIONS="${2-}"
+      shift
+      ;;
+    -t | --window)
+      TIME_WINDOW="${2-}"
+      shift
+      ;;
     --unresampled)
-    UNRESAMPLED=YES
-    shift # past argument with no value
-    ;;
-    *)
-          # unknown option
-    ;;
-esac
-done
+      UNRESAMPLED=YES ;;
+    -?*) die "Unknown option: $1" ;;
+    *) break ;;
+    esac
+    shift
+  done
 
+  args=("$@")
+
+  return 0
+}
+
+
+# Some setup
+parse_params "$@"
 
 ################################################################################
 
