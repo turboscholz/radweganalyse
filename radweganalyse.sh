@@ -1,17 +1,32 @@
 #!/bin/bash
 set -e
 
-# This sript takes a csv file with acceleration measurements and a csv
-# file with location messurements from the Android app "phyphox" and
-# generates a gpx file out of it in which the elevation values are actually
-# the z acceleration values.
-# 
-# Why is this information usefull? It can be used with a standard gpx viewer
-# to see how the bike lane quality is and where problematic locations are
-# "hidden" on the bike path.
+usage() {
+  cat <<EOF
+This sript takes a csv file with acceleration measurements and a csv
+file with location messurements from the Android app "phyphox" and
+generates a gpx file out of it in which the elevation values are actually
+the z acceleration values.
 
-# Dependencies: GMT's "sample1d", gpsbable, basic linux commands
-#               python for finding largest values, pandas python package
+Why is this information usefull? It can be used with a standard gpx viewer
+to see how the bike lane quality is and where problematic locations are
+"hidden" on the bike path.
+
+Dependencies: GMT's "sample1d", gpsbable, basic linux commands
+              python for finding largest values, pandas python package
+
+-h, --help            Print this help and exit
+-v, --verbose         Print script debug info
+-o, --output          The output file name can be overridden, default is "xyz_data.gpx"
+-l, --locations       This is the input file of the phyphox experiment, default is "Location.csv"
+-a, --accelerations   This is the acceleration measurement file from phyphox
+                      where the gravitational acceleration is not taken into account, default "Accelerometer.csv"
+                      This file does not need to be existing if the file "Linear Acceleration.csv" is available.
+-b  		      The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
+-t                    The time window in seconds in which a no other value with high z accelerations will be searched, default 2
+EOF
+  exit
+}
 
 # Default values (adjustable by user options):
 #
@@ -45,6 +60,7 @@ UNRESAMPLED=NO
 for i in "$@"
 do
 case $i in
+    -h | --help) usage ;;
     -o|--output)
     OUTPUT_ARG="$2"
     shift # past argument
