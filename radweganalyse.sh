@@ -60,12 +60,12 @@ setup_test_vars()
 
 parse_params() {
   # default values of variables set from params
-  OUTPUTFILENAME="xyz_data.gpx"
-  LOCATIONFILE="Location.csv"
-  ACCELEROMETERFILE="Accelerometer.csv"
+  OUTPUT_ARG="xyz_data.gpx"
+  LOCATION_ARG="Location.csv"
+  ACCELEROMETERFILE_ARG="Accelerometer.csv"
   ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
-  BAD_STREET_POSITIONS="5"
-  TIME_WINDOW="2"
+  BAD_STREET_POSITIONS_ARG="5"
+  TIME_WINDOW_ARG="2"
   UNRESAMPLED=NO
   TEST=NO
 
@@ -74,23 +74,23 @@ parse_params() {
     -h | --help) usage ;;
     -v | --verbose) set -x ;;
     -o | --output)
-      OUTPUTFILENAME="${2-}"
+      OUTPUT_ARG="${2-}"
       shift
       ;;
     -l | --locations)
-      LOCATIONFILE="${2-}"
+      LOCATION_ARG="${2-}"
       shift
       ;;
     -a | --accelerations)
-      ACCELEROMETERFILE="${2-}"
+      ACCELEROMETERFILE_ARG="${2-}"
       shift
       ;;
     -b | --bad)
-      BAD_STREET_POSITIONS="${2-}"
+      BAD_STREET_POSITIONS_ARG="${2-}"
       shift
       ;;
     -t | --window)
-      TIME_WINDOW="${2-}"
+      TIME_WINDOW_ARG="${2-}"
       shift
       ;;
     --unresampled)
