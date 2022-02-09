@@ -1,5 +1,6 @@
 #!/bin/bash
 set -Eeo pipefail
+trap cleanup SIGINT SIGTERM ERR EXIT
 
 usage() {
   cat <<EOF
@@ -25,6 +26,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -b, --bad             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
 -t, --window          The time window in seconds in which a no other value with high z accelerations will be searched, default 2
     --unresampled     Do not create a gpx file with unresampled coordinate data
+    --test            Apply an automatic regression test to check if all dependencies work as expected
 EOF
   exit
 }
@@ -50,6 +52,12 @@ die() {
   exit "$code"
 }
 
+setup_test_vars()
+{
+    ACCSFILE=$(mktemp --dry-run)
+    COORDSFILE=$(mktemp --dry-run)
+}
+
 parse_params() {
   # default values of variables set from params
   OUTPUTFILENAME="xyz_data.gpx"
@@ -59,6 +67,7 @@ parse_params() {
   BAD_STREET_POSITIONS="5"
   TIME_WINDOW="2"
   UNRESAMPLED=NO
+  TEST=NO
 
   while :; do
     case "${1-}" in
@@ -86,6 +95,8 @@ parse_params() {
       ;;
     --unresampled)
       UNRESAMPLED=YES ;;
+    --test)
+      TEST=YES ;;
     -?*) die "Unknown option: $1" ;;
     *) break ;;
     esac
@@ -101,8 +112,80 @@ parse_params() {
 # Some setup
 setup_colors
 parse_params "$@"
+setup_test_vars
+
+cleanup_tests()
+{
+    msg "Cleanup test files ..."
+
+    rm $ACCSFILE
+    rm $COORDSFILE
+
+    msg "Done."
+}
+
+cleanup() {
+    trap - SIGINT SIGTERM ERR EXIT
+
+    if [ "$TEST" == "YES" ]; then
+	cleanup_tests
+    fi
+}
 
 ################################################################################
+
+output_actual_vs_expected()
+{
+    msg "Actual value: ${1}, Expected: ${2}"
+    echo
+}
+
+write_files_test()
+{
+    lines=$(wc -l $ACCSFILE | cut -d " " -f 1)
+    if [[ $lines -ne 4 ]]; then
+	msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+	msg "Lines of accelerations file ${ACCSFILE}:"
+	output_actual_vs_expected $lines 4
+	return 1
+    fi
+
+    lines=$(wc -l $COORDSFILE | cut -d " " -f 1)
+    if [[ $lines -ne 3 ]]; then
+	msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+	msg "Lines of coordinations file ${COORDSFILE}:"
+	output_actual_vs_expected $lines 3
+	return 1
+    fi
+
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+do_regression_tests()
+{
+    cat <<EOF > $ACCSFILE
+"Time (s)","Linear Acceleration x (m/s^2)","Linear Acceleration y (m/s^2)","Linear Acceleration z (m/s^2)"
+0.000000000E0,1.000000000E-1,2.000000000E-1,3.000000000E-1
+0.500000000E-1,1.000000000E-1,2.000000000E-1,3.000000000E-1
+1.000000000E0,1.000000000E-1,2.000000000E-1,3.000000000E-1
+EOF
+
+    cat <<EOF > $COORDSFILE
+"Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
+0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,0.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+0.000000000E1,5.000000000E1,6.000000000E0,1.200000000E2,0.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+EOF
+
+    write_files_test
+    echo
+}
+
+
+if [ $TEST == "YES" ]; then
+    do_regression_tests
+    exit 0
+fi
 
 # Detect which acceleration file is available, set GVALUE accordingly
 GVALUE="0.0"
