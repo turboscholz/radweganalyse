@@ -187,17 +187,19 @@ if [ $TEST == "YES" ]; then
     exit 0
 fi
 
+################################################################################
+################### BELOW THIS LINE THE ACTUAL LOGIC HAPPENS ###################
+################################################################################
+
 # Detect which acceleration file is available, set GVALUE accordingly
 GVALUE="0.0"
-if [ "${ACCELEROMETERFILE_ARG}" == "" ]; then
-    if [ ! -f "$ACCELEROMETERFILE" ]; then
-	if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
-	    echo "Acceleration input file not found"
-	    exit 1
-	else
-	    ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
-	    GVALUE="9.81"
-	fi
+if [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
+    if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
+        echo "Acceleration input file not found"
+        exit 1
+    else
+        ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
+        GVALUE="9.81"
     fi
 fi
 
