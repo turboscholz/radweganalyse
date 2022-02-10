@@ -141,12 +141,6 @@ setup_input_vars()
     fi
 }
 
-# Some setup
-setup_colors
-parse_params "$@"
-setup_input_vars
-setup_test_vars
-
 ################################################################################
 ############################## CLEANUP SECTION #################################
 ################################################################################
@@ -196,7 +190,33 @@ write_files_test()
 	output_actual_vs_expected $lines 3
 	return 1
     fi
+}
 
+export_times_and_zaccs_in_file_test()
+{
+    ACCLS=$(export_times_and_zaccs_in_file "$ACCSFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+"Time (s)","Linear Acceleration z (m/s^2)"
+0.000000000E0,3.000000000E-1
+0.500000000E-1,3.000000000E-1
+1.000000000E0,3.000000000E-1
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $ACCLS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $ACCLS
+        rm $EXPECTED_FILE
+        return 1
+    fi
+
+    rm $EXPECTED_FILE
     msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
     return 0
 }
@@ -217,14 +237,9 @@ EOF
 EOF
 
     write_files_test
+    export_times_and_zaccs_in_file_test
     echo
 }
-
-
-if [ $TEST == "YES" ]; then
-    do_regression_tests
-    exit 0
-fi
 
 ################################################################################
 ################### BELOW THIS LINE THE ACTUAL LOGIC HAPPENS ###################
@@ -232,107 +247,130 @@ fi
 
 # Just leave the time and acceleration in z-direction
 function export_times_and_zaccs_in_file {
-    ACCLS=$(mktemp /tmp/XXXXXX)
-    cut "$ACCELEROMETERFILE" -d, -f1,4 > $ACCLS
-
-    echo "$ACCLS"
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    cut "$1" -d, -f1,4 > $TMPFILE
+    echo "$TMPFILE"
 }
-ZACCLS=$(export_times_and_zaccs_in_file)
 
-# Leave time, latitude, longitue, speed
-COORDS=$(mktemp /tmp/XXXXXX)
-cut $LOCATIONFILE -d, -f1-3,5 > $COORDS
+execute()
+{
+    ACCLS=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
 
-# Remove the header line from each data file
-sed -i '1d;' $ACCLS
-sed -i '1d;' $COORDS
+    # Leave time, latitude, longitue, speed
+    COORDS=$(mktemp /tmp/XXXXXX)
+    cut $LOCATIONFILE -d, -f1-3,5 > $COORDS
 
-COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
-gmt sample1d -s $COORDS -T${ACCLS} > $COORDS_RESAMPLED
+    # Remove the header line from each data file
+    sed -i '1d;' $ACCLS
+    sed -i '1d;' $COORDS
 
-# Remove timestamps from acceleration file
-Z_ACCELS=$(mktemp /tmp/XXXXXX)
-cut $ACCLS -d, -f2 > $Z_ACCELS
+    COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
+    GMT sample1d -S $COORDS -T${ACCLS} > $COORDS_RESAMPLED
 
-rm $ACCLS
+    # Remove timestamps from acceleration file
+    Z_ACCELS=$(mktemp /tmp/XXXXXX)
+    cut $ACCLS -d, -f2 > $Z_ACCELS
 
-sed -i 's/\t/, /g;' $COORDS_RESAMPLED
+    rm $ACCLS
 
-MERGED=$(mktemp /tmp/XXXXXX)
-paste -d, $COORDS_RESAMPLED $Z_ACCELS > $MERGED
-rm $COORDS_RESAMPLED
-rm $Z_ACCELS
+    sed -i 's/\t/, /g;' $COORDS_RESAMPLED
 
-# Remove lines which start with a comma after merging
-sed -i '/^,/d' $MERGED
+    MERGED=$(mktemp /tmp/XXXXXX)
+    paste -d, $COORDS_RESAMPLED $Z_ACCELS > $MERGED
+    rm $COORDS_RESAMPLED
+    rm $Z_ACCELS
 
-# This file can be used later to analyze the data with a Python script
-MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
-cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
-sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
+    # Remove lines which start with a comma after merging
+    sed -i '/^,/d' $MERGED
 
-# This file will be used to export the final results to.
-# We don't need time information in it.
-MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
-cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
-sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
-rm $MERGED
+    # This file can be used later to analyze the data with a Python script
+    MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
+    cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
+    sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
 
-# Create the gpx file with acceleration data
-MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
-gpsbabel -t -i unicsv -f $MERGED_WO_TIME -o gpx -F $MERGED_WO_TIME_GPX
-rm $MERGED_WO_TIME
+    # This file will be used to export the final results to.
+    # We don't need time information in it.
+    MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
+    cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
+    sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
+    rm $MERGED
 
-# Create the unresampled gpx file (from the original data)
-if [ $UNRESAMPLED == "YES" ]; then
-    COORDS_WO_TIME=$(mktemp /tmp/XXXXXX)
-    cut -d, -f2,3 $COORDS > $COORDS_WO_TIME
-    COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
-    OLDIFS=$IFS
-    IFS=','
-    while read LAT LON
-    do
-	LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
-	LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
-	echo "$LAT_CONV, $LON_CONV" >> $COORDS_WO_TIME_CONVERTED
-    done < $COORDS_WO_TIME
-    IFS=$OLDIFS
+    # Create the gpx file with acceleration data
+    MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
+    gpsbabel -t -i unicsv -f $MERGED_WO_TIME -o gpx -F $MERGED_WO_TIME_GPX
+    rm $MERGED_WO_TIME
 
-    sed -i '1i lat, long' $COORDS_WO_TIME_CONVERTED # Include header
-    COORDS_WO_TIME_CONVERTED_GPX=$(mktemp /tmp/XXXXXX)
-    gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F $COORDS_WO_TIME_CONVERTED_GPX
-    rm $COORDS_WO_TIME
-    rm $COORDS_WO_TIME_CONVERTED
-fi
+    # Create the unresampled gpx file (from the original data)
+    if [ $UNRESAMPLED == "YES" ]; then
+        COORDS_WO_TIME=$(mktemp /tmp/XXXXXX)
+        cut -d, -f2,3 $COORDS > $COORDS_WO_TIME
+        COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
+        OLDIFS=$IFS
+        IFS=','
+        while read LAT LON
+        do
+            LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
+            LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
+            echo "$LAT_CONV, $LON_CONV" >> $COORDS_WO_TIME_CONVERTED
+        done < $COORDS_WO_TIME
+        IFS=$OLDIFS
 
-rm $COORDS
+        sed -i '1i lat, long' $COORDS_WO_TIME_CONVERTED # Include header
+        COORDS_WO_TIME_CONVERTED_GPX=$(mktemp /tmp/XXXXXX)
+        gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F $COORDS_WO_TIME_CONVERTED_GPX
+        rm $COORDS_WO_TIME
+        rm $COORDS_WO_TIME_CONVERTED
+    fi
 
-# Get the coordinates with the highest z values in a seperate gpx file
-HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
+    rm $COORDS
 
-# Get the path of this script
-SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+    # Get the coordinates with the highest z values in a seperate gpx file
+    HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 
-# Find the gps coordinates where the highest z acceleration values happened
-python "$SCRIPTPATH"/acceleration_selection.py -i $MERGED_WITH_TIME -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS -g $GVALUE
+    # Get the path of this script
+    SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-rm $MERGED_WITH_TIME
+    # Find the gps coordinates where the highest z acceleration values happened
+    python "$SCRIPTPATH"/acceleration_selection.py -i $MERGED_WITH_TIME -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS -g $GVALUE
 
-TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
-cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
+    rm $MERGED_WITH_TIME
 
-TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
-gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $TIME_SORTED_Z_COORDS_GPX
-rm $HIGH_Z_COORDS
-rm $TIME_SORTED_Z_COORDS
+    TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
+    cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
 
-# Merge the last gpx into the first one and create a seperate output file
-gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gpx -F $OUTPUTFILENAME
-rm $MERGED_WO_TIME_GPX
+    TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
+    gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $TIME_SORTED_Z_COORDS_GPX
+    rm $HIGH_Z_COORDS
+    rm $TIME_SORTED_Z_COORDS
 
-if [ $UNRESAMPLED == "YES" ]; then
-    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
-    rm $COORDS_WO_TIME_CONVERTED_GPX
-fi
+    # Merge the last gpx into the first one and create a seperate output file
+    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gpx -F $OUTPUTFILENAME
+    rm $MERGED_WO_TIME_GPX
 
-rm $TIME_SORTED_Z_COORDS_GPX
+    if [ $UNRESAMPLED == "YES" ]; then
+        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+        rm $COORDS_WO_TIME_CONVERTED_GPX
+    fi
+
+    rm $TIME_SORTED_Z_COORDS_GPX
+}
+
+main()
+{
+    # Some setup
+    setup_colors
+    parse_params "$@"
+    setup_input_vars
+    setup_test_vars
+
+    # Execute tests if needed
+    if [ $TEST == "YES" ]; then
+        do_regression_tests
+        exit 0
+    fi
+
+    # And go
+    exectue
+}
+
+main "$@"
