@@ -215,9 +215,15 @@ EOF
         cat $EXPECTED_FILE
         msg "got:"
         cat $ACCLS
+        rm $ACCLS
         rm $EXPECTED_FILE
         return 1
     fi
+    rm $ACCLS
+    rm $EXPECTED_FILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
 
 export_time_lat_long_speed_test()
 {
