@@ -216,6 +216,30 @@ EOF
         return 1
     fi
 
+export_time_lat_long_speed_test()
+{
+    COORDS=$(export_time_lat_long_speed "$COORDSFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+"Time (s)","Latitude (°)","Longitude (°)","Velocity (m/s)"
+0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
+0.000000000E1,5.000000000E1,6.000000000E0,2.000000000E0
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $COORDS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $COORDS
+        rm $COORDS
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $COORDS
     rm $EXPECTED_FILE
     msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
     return 0
@@ -232,12 +256,13 @@ EOF
 
     cat <<EOF > $COORDSFILE
 "Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
-0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,0.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
-0.000000000E1,5.000000000E1,6.000000000E0,1.200000000E2,0.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,1.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+0.000000000E1,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
 
     write_files_test
     export_times_and_zaccs_in_file_test
+    export_time_lat_long_speed_test
     echo
 }
 
@@ -246,9 +271,18 @@ EOF
 ################################################################################
 
 # Just leave the time and acceleration in z-direction
-function export_times_and_zaccs_in_file {
+export_times_and_zaccs_in_file()
+{
     TMPFILE=$(mktemp /tmp/XXXXXX)
     cut "$1" -d, -f1,4 > $TMPFILE
+    echo "$TMPFILE"
+}
+
+# Leave time, latitude, longitue, speed
+export_time_lat_long_speed ()
+{
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    cut "$1" -d, -f1-3,5 > $TMPFILE
     echo "$TMPFILE"
 }
 
@@ -256,9 +290,7 @@ execute()
 {
     ACCLS=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
 
-    # Leave time, latitude, longitue, speed
-    COORDS=$(mktemp /tmp/XXXXXX)
-    cut $LOCATIONFILE -d, -f1-3,5 > $COORDS
+    COORDS=$(export_time_lat_long_speed "$LOCATIONFILE")
 
     # Remove the header line from each data file
     sed -i '1d;' $ACCLS
