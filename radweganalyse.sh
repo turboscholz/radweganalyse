@@ -109,9 +109,42 @@ parse_params() {
 }
 
 
+setup_input_vars()
+{
+    # Detect which acceleration file is available, set GVALUE accordingly
+    GVALUE="0.0"
+    if [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
+        if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
+            echo "Acceleration input file not found"
+            exit 1
+        else
+            ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
+            GVALUE="9.81"
+        fi
+    fi
+
+    # Assign values of script arguments
+    if [ "${OUTPUT_ARG}" != "" ]; then
+        OUTPUTFILENAME="${OUTPUT_ARG}"
+    fi
+    if [ "${LOCATIONFILE_ARG}" != "" ]; then
+        LOCATIONFILE="${LOCATIONFILE_ARG}"
+    fi
+    if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
+        ACCELEROMETERFILE="${ACCELEROMETERFILE_ARG}"
+    fi
+    if [ "${BAD_STREET_POSITIONS_ARG}" != "" ]; then
+        BAD_STREET_POSITIONS="${BAD_STREET_POSITIONS_ARG}"
+    fi
+    if [ "${TIME_WINDOW_ARG}" != "" ]; then
+        TIME_WINDOW="${TIME_WINDOW_ARG}"
+    fi
+}
+
 # Some setup
 setup_colors
 parse_params "$@"
+setup_input_vars
 setup_test_vars
 
 ################################################################################
@@ -196,35 +229,6 @@ fi
 ################################################################################
 ################### BELOW THIS LINE THE ACTUAL LOGIC HAPPENS ###################
 ################################################################################
-
-# Detect which acceleration file is available, set GVALUE accordingly
-GVALUE="0.0"
-if [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
-    if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
-        echo "Acceleration input file not found"
-        exit 1
-    else
-        ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
-        GVALUE="9.81"
-    fi
-fi
-
-# Assign values of script arguments
-if [ "${OUTPUT_ARG}" != "" ]; then
-    OUTPUTFILENAME="${OUTPUT_ARG}"
-fi
-if [ "${LOCATIONFILE_ARG}" != "" ]; then
-    LOCATIONFILE="${LOCATIONFILE_ARG}"
-fi
-if [ "${ACCELEROMETERFILE_ARG}" != "" ]; then
-    ACCELEROMETERFILE="${ACCELEROMETERFILE_ARG}"
-fi
-if [ "${BAD_STREET_POSITIONS_ARG}" != "" ]; then
-    BAD_STREET_POSITIONS="${BAD_STREET_POSITIONS_ARG}"
-fi
-if [ "${TIME_WINDOW_ARG}" != "" ]; then
-    TIME_WINDOW="${TIME_WINDOW_ARG}"
-fi
 
 # Just leave the time and acceleration in z-direction
 ACCLS=$(mktemp /tmp/XXXXXX)
