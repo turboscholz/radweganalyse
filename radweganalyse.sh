@@ -177,19 +177,22 @@ write_files_test()
 {
     lines=$(wc -l $ACCSFILE | cut -d " " -f 1)
     if [[ $lines -ne 4 ]]; then
-	msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
-	msg "Lines of accelerations file ${ACCSFILE}:"
-	output_actual_vs_expected $lines 4
-	return 1
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "Lines of accelerations file ${ACCSFILE}:"
+        output_actual_vs_expected $lines 4
+        return 1
     fi
 
     lines=$(wc -l $COORDSFILE | cut -d " " -f 1)
     if [[ $lines -ne 3 ]]; then
-	msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
-	msg "Lines of coordinations file ${COORDSFILE}:"
-	output_actual_vs_expected $lines 3
-	return 1
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "Lines of coordinations file ${COORDSFILE}:"
+        output_actual_vs_expected $lines 3
+        return 1
     fi
+
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
 }
 
 export_times_and_zaccs_in_file_test()
