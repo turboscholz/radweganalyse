@@ -231,8 +231,13 @@ fi
 ################################################################################
 
 # Just leave the time and acceleration in z-direction
-ACCLS=$(mktemp /tmp/XXXXXX)
-cut "$ACCELEROMETERFILE" -d, -f1,4 > $ACCLS
+function export_times_and_zaccs_in_file {
+    ACCLS=$(mktemp /tmp/XXXXXX)
+    cut "$ACCELEROMETERFILE" -d, -f1,4 > $ACCLS
+
+    echo "$ACCLS"
+}
+ZACCLS=$(export_times_and_zaccs_in_file)
 
 # Leave time, latitude, longitue, speed
 COORDS=$(mktemp /tmp/XXXXXX)
