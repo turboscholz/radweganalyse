@@ -118,7 +118,7 @@ setup_input_vars()
 {
     # Detect which acceleration file is available, set GVALUE accordingly
     GVALUE="0.0"
-    if [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
+    if [[ $TEST == "NO" ]] && [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
         if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
             echo "Acceleration input file not found"
             exit 1
