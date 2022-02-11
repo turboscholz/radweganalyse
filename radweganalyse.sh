@@ -265,8 +265,9 @@ generate_resampled_coords_file_test(){
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
-0.000000000E1,5.000000000E1,6.000000000E0,2.000000000E0
+0	40	5	1
+0.5	45	5.5	1.5
+1	50	6	2
 EOF
     set +e
     cmp --silent $EXPECTED_FILE $RESAMPLED_COORDS_FILE
@@ -306,6 +307,7 @@ EOF
     write_files_test
     export_times_and_zaccs_in_file_test
     export_time_lat_long_speed_test
+    generate_resampled_coords_file_test
     echo
 }
 
@@ -331,13 +333,18 @@ export_time_lat_long_speed ()
     echo "$TMPFILE"
 }
 
+generate_resampled_coords_file(){
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    GMT sample1d $1 -N$2 > $TMPFILE
+    echo "$TMPFILE"
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
 
-    COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
-    GMT sample1d -S $COORDSFILE -T${ZACCLSFILE} > $COORDS_RESAMPLED
+    COORDS_RESAMPLED=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
 
     # Remove timestamps from acceleration file
     Z_ACCELS=$(mktemp /tmp/XXXXXX)
