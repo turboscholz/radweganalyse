@@ -1,5 +1,5 @@
 #!/bin/bash
-set -Eeo pipefail
+set -eo pipefail
 trap cleanup SIGINT SIGTERM ERR EXIT
 
 usage() {
