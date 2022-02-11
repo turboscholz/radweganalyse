@@ -52,6 +52,11 @@ die() {
   exit "$code"
 }
 
+check_dependencies() {
+  which GMT      >&2 > /dev/null || die "GMT binary not found"
+  which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found"
+}
+
 setup_test_vars()
 {
     ACCSFILE=$(mktemp --dry-run)
@@ -395,6 +400,7 @@ main()
 {
     # Some setup
     setup_colors
+    check_dependencies
     parse_params "$@"
     setup_input_vars
     setup_test_vars
