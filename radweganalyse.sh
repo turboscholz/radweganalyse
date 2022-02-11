@@ -406,7 +406,7 @@ main()
     fi
 
     # And go
-    exectue
+    execute
 }
 
 main "$@"
