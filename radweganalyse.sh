@@ -297,22 +297,22 @@ export_time_lat_long_speed ()
 
 execute()
 {
-    ACCLS=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
+    ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
 
-    COORDS=$(export_time_lat_long_speed "$LOCATIONFILE")
+    COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
 
     # Remove the header line from each data file
-    sed -i '1d;' $ACCLS
-    sed -i '1d;' $COORDS
+    sed -i '1d;' $ZACCLSFILE
+    sed -i '1d;' $COORDSFILE
 
     COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
-    GMT sample1d -S $COORDS -T${ACCLS} > $COORDS_RESAMPLED
+    GMT sample1d -S $COORDSFILE -T${ZACCLSFILE} > $COORDS_RESAMPLED
 
     # Remove timestamps from acceleration file
     Z_ACCELS=$(mktemp /tmp/XXXXXX)
-    cut $ACCLS -d, -f2 > $Z_ACCELS
+    cut $ZACCLSFILE -d, -f2 > $Z_ACCELS
 
-    rm $ACCLS
+    rm $ZACCLSFILE
 
     sed -i 's/\t/, /g;' $COORDS_RESAMPLED
 
@@ -344,7 +344,7 @@ execute()
     # Create the unresampled gpx file (from the original data)
     if [ $UNRESAMPLED == "YES" ]; then
         COORDS_WO_TIME=$(mktemp /tmp/XXXXXX)
-        cut -d, -f2,3 $COORDS > $COORDS_WO_TIME
+        cut -d, -f2,3 $COORDSFILE > $COORDS_WO_TIME
         COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
         OLDIFS=$IFS
         IFS=','
@@ -363,7 +363,7 @@ execute()
         rm $COORDS_WO_TIME_CONVERTED
     fi
 
-    rm $COORDS
+    rm $COORDSFILE
 
     # Get the coordinates with the highest z values in a seperate gpx file
     HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
