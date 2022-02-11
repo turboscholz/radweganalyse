@@ -66,7 +66,7 @@ setup_test_vars()
 parse_params() {
   # default values of variables set from params
   OUTPUT_ARG="xyz_data.gpx"
-  LOCATION_ARG="Location.csv"
+  LOCATIONFILE="Location.csv"
   ACCELEROMETERFILE="Accelerometer.csv"
   ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
   BAD_STREET_POSITIONS_ARG="5"
@@ -83,7 +83,7 @@ parse_params() {
       shift
       ;;
     -l | --locations)
-      LOCATION_ARG="${2-}"
+      LOCATIONFILE_ARG="${2-}"
       shift
       ;;
     -a | --accelerations)
