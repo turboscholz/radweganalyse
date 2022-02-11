@@ -200,7 +200,6 @@ export_times_and_zaccs_in_file_test()
     ACCLS=$(export_times_and_zaccs_in_file "$ACCSFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-"Time (s)","Linear Acceleration z (m/s^2)"
 0.000000000E0,3.000000000E-1
 0.500000000E-1,3.000000000E-1
 1.000000000E0,3.000000000E-1
@@ -230,7 +229,6 @@ export_time_lat_long_speed_test()
     COORDS=$(export_time_lat_long_speed "$COORDSFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-"Time (s)","Latitude (°)","Longitude (°)","Velocity (m/s)"
 0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
 0.000000000E1,5.000000000E1,6.000000000E0,2.000000000E0
 EOF
@@ -284,6 +282,7 @@ export_times_and_zaccs_in_file()
 {
     TMPFILE=$(mktemp /tmp/XXXXXX)
     cut "$1" -d, -f1,4 > $TMPFILE
+    sed -i '1d;' $TMPFILE
     echo "$TMPFILE"
 }
 
@@ -292,18 +291,14 @@ export_time_lat_long_speed ()
 {
     TMPFILE=$(mktemp /tmp/XXXXXX)
     cut "$1" -d, -f1-3,5 > $TMPFILE
+    sed -i '1d;' $TMPFILE
     echo "$TMPFILE"
 }
 
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
-
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
-
-    # Remove the header line from each data file
-    sed -i '1d;' $ZACCLSFILE
-    sed -i '1d;' $COORDSFILE
 
     COORDS_RESAMPLED=$(mktemp /tmp/XXXXXX)
     GMT sample1d -S $COORDSFILE -T${ZACCLSFILE} > $COORDS_RESAMPLED
