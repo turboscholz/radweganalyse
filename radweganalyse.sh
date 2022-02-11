@@ -67,7 +67,7 @@ parse_params() {
   # default values of variables set from params
   OUTPUT_ARG="xyz_data.gpx"
   LOCATION_ARG="Location.csv"
-  ACCELEROMETERFILE_ARG="Accelerometer.csv"
+  ACCELEROMETERFILE="Accelerometer.csv"
   ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
   BAD_STREET_POSITIONS_ARG="5"
   TIME_WINDOW_ARG="2"
