@@ -59,8 +59,8 @@ check_dependencies() {
 
 setup_test_vars()
 {
-    ACCSFILE=$(mktemp --dry-run)
-    COORDSFILE=$(mktemp --dry-run)
+    ACCSTESTFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    COORDSTESTFILE=$(mktemp /tmp/XXXXXX --dry-run)
 }
 
 parse_params() {
@@ -154,8 +154,8 @@ cleanup_tests()
 {
     msg "Cleanup test files ..."
 
-    rm $ACCSFILE
-    rm $COORDSFILE
+    rm $ACCSTESTFILE
+    rm $COORDSTESTFILE
 
     msg "Done."
 }
@@ -180,18 +180,18 @@ output_actual_vs_expected()
 
 write_files_test()
 {
-    lines=$(wc -l $ACCSFILE | cut -d " " -f 1)
+    lines=$(wc -l $ACCSTESTFILE | cut -d " " -f 1)
     if [[ $lines -ne 4 ]]; then
         msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
-        msg "Lines of accelerations file ${ACCSFILE}:"
+        msg "Lines of accelerations file ${ACCSTESTFILE}:"
         output_actual_vs_expected $lines 4
         return 1
     fi
 
-    lines=$(wc -l $COORDSFILE | cut -d " " -f 1)
+    lines=$(wc -l $COORDSTESTFILE | cut -d " " -f 1)
     if [[ $lines -ne 3 ]]; then
         msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
-        msg "Lines of coordinations file ${COORDSFILE}:"
+        msg "Lines of coordinations file ${COORDSTESTFILE}:"
         output_actual_vs_expected $lines 3
         return 1
     fi
@@ -202,7 +202,7 @@ write_files_test()
 
 export_times_and_zaccs_in_file_test()
 {
-    ACCLS=$(export_times_and_zaccs_in_file "$ACCSFILE")
+    ACCLS=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,1.000000000E-1
@@ -231,7 +231,7 @@ EOF
 
 export_time_lat_long_speed_test()
 {
-    COORDS=$(export_time_lat_long_speed "$COORDSFILE")
+    COORDS=$(export_time_lat_long_speed "$COORDSTESTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
@@ -258,8 +258,8 @@ EOF
 }
 
 generate_resampled_coords_file_test(){
-    COORDSFILETMP=$(export_time_lat_long_speed "$COORDSFILE")
-    ZACCLSFILETMP=$(export_times_and_zaccs_in_file "$ACCSFILE")
+    COORDSFILETMP=$(export_time_lat_long_speed "$COORDSTESTFILE")
+    ZACCLSFILETMP=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
 
     RESAMPLED_COORDS_FILE=$(generate_resampled_coords_file $COORDSFILETMP $ZACCLSFILETMP)
 
@@ -290,14 +290,14 @@ EOF
 
 do_regression_tests()
 {
-    cat <<EOF > $ACCSFILE
+    cat <<EOF > $ACCSTESTFILE
 "Time (s)","Linear Acceleration x (m/s^2)","Linear Acceleration y (m/s^2)","Linear Acceleration z (m/s^2)"
 0.000000000E0,1.000000000E-1,2.000000000E-1,1.000000000E-1
 5.000000000E-1,1.000000000E-1,2.000000000E-1,2.000000000E-1
 1.000000000E0,1.000000000E-1,2.000000000E-1,3.000000000E-1
 EOF
 
-    cat <<EOF > $COORDSFILE
+    cat <<EOF > $COORDSTESTFILE
 "Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
 0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,1.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
