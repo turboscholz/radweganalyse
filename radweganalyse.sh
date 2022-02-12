@@ -465,7 +465,7 @@ execute()
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
-    MERGED_WO_TIME_GPX=$(create_gpx_file $COORDSANDACCSFILE)
+    TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
     rm $COORDSANDACCSFILE
 
     # Create the unresampled gpx file (from the original data)
@@ -512,8 +512,8 @@ execute()
     rm $TIME_SORTED_Z_COORDS
 
     # Merge the last gpx into the first one and create a seperate output file
-    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $MERGED_WO_TIME_GPX -o gpx -F $OUTPUTFILENAME
-    rm $MERGED_WO_TIME_GPX
+    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
+    rm $TMPGPXFILE
 
     if [ $UNRESAMPLED == "YES" ]; then
         gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
