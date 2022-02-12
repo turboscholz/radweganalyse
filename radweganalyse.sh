@@ -23,9 +23,9 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -a, --accelerations   This is the acceleration measurement file from phyphox
                       where the gravitational acceleration is not taken into account, default "Accelerometer.csv"
                       This file does not need to be existing if the file "Linear Acceleration.csv" is available.
--b, --bad             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
+-m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
+    --onlymax         Only create a gpx file pointing to positions with maximum z-acceleration
 -t, --window          The time window in seconds in which a no other value with high z accelerations will be searched, default 2
-    --unresampled     Do not create a gpx file with unresampled coordinate data
     --test            Apply an automatic regression test to check if all dependencies work as expected
 EOF
   exit
@@ -90,7 +90,7 @@ parse_params() {
       ACCELEROMETERFILE_ARG="${2-}"
       shift
       ;;
-    -b | --bad)
+    -m | --max)
       BAD_STREET_POSITIONS_ARG="${2-}"
       shift
       ;;
@@ -98,7 +98,7 @@ parse_params() {
       TIME_WINDOW_ARG="${2-}"
       shift
       ;;
-    --unresampled)
+    --onlymax)
       UNRESAMPLED=YES ;;
     --test)
       TEST=YES ;;
