@@ -324,6 +324,55 @@ EOF
     return 0
 }
 
+create_gpx_file_test()
+{
+    INPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $INPUTFILE
+y, x, speed, z
+40,5,1,1.000000000E-1
+EOF
+
+    GPXFILE=$(mktemp /tmp/XXXXXX)
+    gpsbabel -t -i unicsv -f $INPUTFILE -o gpx -F $GPXFILE
+    sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
+  <bounds minlat="40.000000000" minlon="5.000000000" maxlat="40.000000000" maxlon="5.000000000"/>
+  <trk>
+    <trkseg>
+      <trkpt lat="40.000000000" lon="5.000000000">
+        <ele>0.100</ele>
+        <speed>1.000000</speed>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $GPXFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $GPXFILE
+        rm $GPXFILE
+        rm $EXPECTED_FILE
+        rm $INPUTFILE
+        return 1
+    fi
+    rm $GPXFILE
+    rm $EXPECTED_FILE
+    rm $INPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -344,6 +393,7 @@ EOF
     export_time_lat_long_speed_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
+    create_gpx_file_test
     echo
 }
 
@@ -387,6 +437,14 @@ merge_coords_and_zacc_file()
     echo "$TMPFILE"
 }
 
+create_gpx_file()
+{
+    # Create the gpx file with acceleration data
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    gpsbabel -t -i unicsv -f $1 -o gpx -F $TMPFILE
+    echo "$TMPFILE"
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
@@ -407,9 +465,7 @@ execute()
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
-    # Create the gpx file with acceleration data
-    MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
-    gpsbabel -t -i unicsv -f $COORDSANDACCSFILE -o gpx -F $MERGED_WO_TIME_GPX
+    MERGED_WO_TIME_GPX=$(create_gpx_file $COORDSANDACCSFILE)
     rm $COORDSANDACCSFILE
 
     # Create the unresampled gpx file (from the original data)
