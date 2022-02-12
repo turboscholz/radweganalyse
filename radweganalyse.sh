@@ -289,6 +289,41 @@ EOF
     return 0
 }
 
+merge_coords_and_zacc_file_test()
+{
+    COORDSFILETMP=$(export_time_lat_long_speed "$COORDSTESTFILE")
+    ZACCLSFILETMP=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
+    RESAMPLED_COORDS_FILE=$(generate_resampled_coords_file $COORDSFILETMP $ZACCLSFILETMP)
+    MERGEDTESTFILE=$(merge_coords_and_zacc_file $ZACCLSFILETMP $RESAMPLED_COORDS_FILE)
+
+    rm $COORDSFILETMP $ZACCLSFILETMP $RESAMPLED_COORDS_FILE
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+0,40,5,1,1.000000000E-1
+0.5,45,5.5,1.5,2.000000000E-1
+1,50,6,2,3.000000000E-1
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $MERGEDTESTFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $MERGEDTESTFILE
+        rm $MERGEDTESTFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $MERGEDTESTFILE
+    rm $EXPECTED_FILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -308,6 +343,7 @@ EOF
     export_times_and_zaccs_in_file_test
     export_time_lat_long_speed_test
     generate_resampled_coords_file_test
+    merge_coords_and_zacc_file_test
     echo
 }
 
@@ -339,25 +375,27 @@ generate_resampled_coords_file(){
     echo "$TMPFILE"
 }
 
+merge_coords_and_zacc_file()
+{
+    # Remove timestamps from acceleration file
+    sed -i 's/^[^,]*,//g' $1
+    # Convert tabs to comma in coordination file
+    sed -i 's/\t/,/g;' $2
+
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    paste -d, $2 $1 > $TMPFILE
+    echo "$TMPFILE"
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
-
     COORDS_RESAMPLED=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
+    MERGED=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED)
 
-    # Remove timestamps from acceleration file
-    Z_ACCELS=$(mktemp /tmp/XXXXXX)
-    cut $ZACCLSFILE -d, -f2 > $Z_ACCELS
+    rm $ZACCLSFILE $COORDS_RESAMPLED
 
-    rm $ZACCLSFILE
-
-    sed -i 's/\t/, /g;' $COORDS_RESAMPLED
-
-    MERGED=$(mktemp /tmp/XXXXXX)
-    paste -d, $COORDS_RESAMPLED $Z_ACCELS > $MERGED
-    rm $COORDS_RESAMPLED
-    rm $Z_ACCELS
 
     # Remove lines which start with a comma after merging
     sed -i '/^,/d' $MERGED
