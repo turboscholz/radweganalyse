@@ -55,6 +55,8 @@ die() {
 check_dependencies() {
   which GMT      >&2 > /dev/null || die "GMT binary not found"
   which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found"
+  which awk      >&2 > /dev/null || die "awk binary not found"
+  which sed      >&2 > /dev/null || die "sed binary not found"
 }
 
 setup_test_vars()
