@@ -391,26 +391,24 @@ execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
-    COORDS_RESAMPLED=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
-    MERGED=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED)
+    COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
+    COORDSANDACCSFILE=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
 
     rm $ZACCLSFILE $COORDS_RESAMPLED
 
-
     # Remove lines which start with a comma after merging
-    sed -i '/^,/d' $MERGED
+    sed -i '/^,/d' $COORDSANDACCSFILE
 
-    # This file can be used later to analyze the data with a Python script
-    MERGED_WITH_TIME=$(mktemp /tmp/XXXXXX)
-    cut -d, -f1-5 $MERGED > $MERGED_WITH_TIME
-    sed -i '1i time, y, x, speed, z' $MERGED_WITH_TIME # Include header
+    # Include header - This file will be used later to analyze the data with a Python script
+    COORDSANDACCSFILEWITHHEADER=$(mktemp /tmp/XXXXXX)
+    sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $COORDSANDACCSFILEWITHHEADER
 
     # This file will be used to export the final results to.
     # We don't need time information in it.
     MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
-    cut -d, -f2,3,4,5 $MERGED > $MERGED_WO_TIME
+    cut -d, -f2,3,4,5 $COORDSANDACCSFILE > $MERGED_WO_TIME
     sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
-    rm $MERGED
+    rm $COORDSANDACCSFILE
 
     # Create the gpx file with acceleration data
     MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
@@ -448,9 +446,9 @@ execute()
     SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
     # Find the gps coordinates where the highest z acceleration values happened
-    python "$SCRIPTPATH"/acceleration_selection.py -i $MERGED_WITH_TIME -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS -g $GVALUE
+    python "$SCRIPTPATH"/acceleration_selection.py -i $COORDSANDACCSFILEWITHHEADER -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS -g $GVALUE
 
-    rm $MERGED_WITH_TIME
+    rm $COORDSANDACCSFILEWITHHEADER
 
     TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
     cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
