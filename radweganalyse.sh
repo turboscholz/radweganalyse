@@ -470,26 +470,26 @@ execute()
     TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
     rm $COORDSANDACCSFILE
 
-    # Create the unresampled gpx file (from the original data)
+    # Create gpx file with only maximum z acceleration positions
     if [ $UNRESAMPLED == "YES" ]; then
-        COORDS_WO_TIME=$(mktemp /tmp/XXXXXX)
-        cut -d, -f2,3 $COORDSFILE > $COORDS_WO_TIME
-        COORDS_WO_TIME_CONVERTED=$(mktemp /tmp/XXXXXX)
+        COORDS_TMP_FILE=$(mktemp /tmp/XXXXXX)
+        cut -d, -f2,3 $COORDSFILE > $COORDS_TMP_FILE
+        COORDSCONVERTEDTMP_FILE=$(mktemp /tmp/XXXXXX)
         OLDIFS=$IFS
         IFS=','
+        # We need to convert scientific notation into float numbers
         while read LAT LON
         do
             LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
             LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
-            echo "$LAT_CONV, $LON_CONV" >> $COORDS_WO_TIME_CONVERTED
-        done < $COORDS_WO_TIME
+            echo "$LAT_CONV, $LON_CONV" >> $COORDSCONVERTEDTMP_FILE
+        done < $COORDS_TMP_FILE
         IFS=$OLDIFS
 
-        sed -i '1i lat, long' $COORDS_WO_TIME_CONVERTED # Include header
-        COORDS_WO_TIME_CONVERTED_GPX=$(mktemp /tmp/XXXXXX)
-        gpsbabel -t -i unicsv -f $COORDS_WO_TIME_CONVERTED -o gpx -F $COORDS_WO_TIME_CONVERTED_GPX
-        rm $COORDS_WO_TIME
-        rm $COORDS_WO_TIME_CONVERTED
+        sed -i '1i lat, long' $COORDSCONVERTEDTMP_FILE # Include header
+        GPX_ONLYMAXZ_FILE=$(create_gpx_file $COORDSCONVERTEDTMP_FILE)
+        rm $COORDS_TMP_FILE
+        rm $COORDSCONVERTEDTMP_FILE
     fi
 
     rm $COORDSFILE
@@ -518,8 +518,8 @@ execute()
     rm $TMPGPXFILE
 
     if [ $UNRESAMPLED == "YES" ]; then
-        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $COORDS_WO_TIME_CONVERTED_GPX -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
-        rm $COORDS_WO_TIME_CONVERTED_GPX
+        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+        rm $GPX_ONLYMAXZ_FILE
     fi
 
     rm $TIME_SORTED_Z_COORDS_GPX
