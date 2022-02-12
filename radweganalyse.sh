@@ -403,17 +403,14 @@ execute()
     COORDSANDACCSFILEWITHHEADER=$(mktemp /tmp/XXXXXX)
     sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $COORDSANDACCSFILEWITHHEADER
 
-    # This file will be used to export the final results to.
-    # We don't need time information in it.
-    MERGED_WO_TIME=$(mktemp /tmp/XXXXXX)
-    cut -d, -f2,3,4,5 $COORDSANDACCSFILE > $MERGED_WO_TIME
-    sed -i '1i y, x, speed, z' $MERGED_WO_TIME # Include header
-    rm $COORDSANDACCSFILE
+    # We don't need time information in column 1 anymore.
+    sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
+    sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
     # Create the gpx file with acceleration data
     MERGED_WO_TIME_GPX=$(mktemp /tmp/XXXXXX)
-    gpsbabel -t -i unicsv -f $MERGED_WO_TIME -o gpx -F $MERGED_WO_TIME_GPX
-    rm $MERGED_WO_TIME
+    gpsbabel -t -i unicsv -f $COORDSANDACCSFILE -o gpx -F $MERGED_WO_TIME_GPX
+    rm $COORDSANDACCSFILE
 
     # Create the unresampled gpx file (from the original data)
     if [ $UNRESAMPLED == "YES" ]; then
