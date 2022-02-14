@@ -424,6 +424,48 @@ EOF
     return 0
 }
 
+analyze_data_via_script_test()
+{
+    if [ $MAXZCALCSCRIPTFOUND -eq 0 ]; then
+        msg "${FUNCNAME[0]}: ${YELLOW}ignored${NOFORMAT} - External analysis script not found"
+        return 0
+    fi
+
+    TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $TMPINPUTFILE
+time, y, x, speed, z
+5.0,49.0,8.6,6.9,58.7
+EOF
+    TMPOUTFILE=$(mktemp /tmp/XXXXXX)
+    analyze_data_via_script $TMPINPUTFILE 1 1 0 $TMPOUTFILE
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+time,y,x,speed,z
+5.0,49.0,8.6,6.9,58.7
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $TMPOUTFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $TMPOUTFILE
+        rm $TMPOUTFILE
+        rm $EXPECTED_FILE
+        rm $TMPINPUTFILE
+        return 1
+    fi
+    rm $TMPOUTFILE
+    rm $EXPECTED_FILE
+    rm $TMPINPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -446,6 +488,7 @@ EOF
     merge_coords_and_zacc_file_test
     create_gpx_file_test
     create_coords_only_gpx_file_test
+    analyze_data_via_script_test
     echo
 }
 
@@ -522,6 +565,17 @@ create_coords_only_gpx_file()
     echo "$RETURNFILE"
 }
 
+# We expect the outcome of the analysing script to be a table with five columns
+# of time, y, x, speed, and z-acceleration like this: (the table header is important!)
+#time,y,x,speed,z
+#5.0,49.0,8.6,6.9,58.7
+#...
+analyze_data_via_script()
+{
+    # Find the gps coordinates where the highest z acceleration values happened
+    python "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -g $4 -o $5
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
@@ -550,7 +604,7 @@ execute()
         HIGHZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
 
         # Find the gps coordinates where the highest z acceleration values happened
-        python "$SCRIPTPATH"/acceleration_selection.py -i $TIMECOORDSZACCSFILE -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGHZCOORDSTMPFILE -g $GVALUE
+        analyze_data_via_script $TIMECOORDSZACCSFILE $BAD_STREET_POSITIONS $TIME_WINDOW $GVALUE $HIGHZCOORDSTMPFILE
 
         # Sort for the time and remove this column also.
         # Whith this we can create a gpx file where the positions with
