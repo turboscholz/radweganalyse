@@ -527,23 +527,24 @@ execute()
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
-    COORDSANDACCSFILE=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
+    MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
 
-    rm $ZACCLSFILE $COORDS_RESAMPLED
+    # Remove lines which start with a comma after merging (if there are any)
+    sed -i '/^,/d' $MERGEDMEASUREDATAFILE
 
-    # Remove lines which start with a comma after merging
-    sed -i '/^,/d' $COORDSANDACCSFILE
+    COORDSANDACCSFILE=$(mktemp /tmp/XXXXXX)
+    cp $MERGEDMEASUREDATAFILE $COORDSANDACCSFILE
 
     # We don't need time information in column 1 anymore.
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
-    TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
+    GPXONLYPATHFILE=$(create_gpx_file $COORDSANDACCSFILE)
 
     if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
-        sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $TIMECOORDSZACCSFILE
+        sed '1i time, y, x, speed, z' $MERGEDMEASUREDATAFILE > $TIMECOORDSZACCSFILE
 
         # output file of the python script
         HIGHZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
@@ -560,18 +561,19 @@ execute()
         ZCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
         gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZCOORDSGPXFILE
 
+        # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
+        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPXONLYPATHFILE -o gpx -F $OUTPUTFILENAME
+
+        rm $GPXONLYPATHFILE
         rm $TIMECOORDSZACCSFILE
         rm $HIGHZCOORDSTMPFILE
         rm $TIMESORTEDZCOORDSTMPFILE
 
-        # Merge the GPX file with high Z-coords and the complete path into one output file
-        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
-        rm $TMPGPXFILE
     else
-        mv $TMPGPXFILE $OUTPUTFILENAME
+        mv $GPXONLYPATHFILE $OUTPUTFILENAME
     fi
 
-    if [ $UNRESAMPLED == "YES" ]; then
+    if [ $UNRESAMPLED == "YES" ] && [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
         UNRESAMPLED_FILENAME=$(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
         GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
         # Merge coordinations and max-Z accelerations gpx file
@@ -582,6 +584,8 @@ execute()
 
     rm $COORDSFILE
     rm $COORDSANDACCSFILE
+    rm $ZACCLSFILE
+    rm $COORDS_RESAMPLED_FILE
 }
 
 main()
