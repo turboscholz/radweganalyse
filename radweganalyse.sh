@@ -535,13 +535,6 @@ execute()
     TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
     rm $COORDSANDACCSFILE
 
-    # Create gpx file with only maximum z acceleration positions
-    if [ $UNRESAMPLED == "YES" ]; then
-        GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
-    fi
-
-    rm $COORDSFILE
-
     # Get the coordinates with the highest z values in a seperate gpx file
     HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
 
@@ -566,10 +559,14 @@ execute()
     rm $TMPGPXFILE
 
     if [ $UNRESAMPLED == "YES" ]; then
-        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F $(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+        UNRESAMPLED_FILENAME=$(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
+        GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
+        # Merge coordinations and max-Z accelerations gpx file
+        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F "$UNRESAMPLED_FILENAME"
         rm $GPX_ONLYMAXZ_FILE
     fi
 
+    rm $COORDSFILE
     rm $TIME_SORTED_Z_COORDS_GPX
 }
 
