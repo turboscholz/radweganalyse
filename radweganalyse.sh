@@ -57,6 +57,16 @@ check_dependencies() {
   which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found"
   which awk      >&2 > /dev/null || die "awk binary not found"
   which sed      >&2 > /dev/null || die "sed binary not found"
+
+  # Get the path of this script
+  SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+  # Find the gps coordinates where the highest z acceleration values happened
+  MAXZCALCSCRIPTFOUND=1
+  if [ ! -f "$SCRIPTPATH"/acceleration_selection.py ]; then
+    msg "${RED}acceleration_selection.py not found, max z positions cannot be calulated${NOFORMAT}"
+    MAXZCALCSCRIPTFOUND=0
+  fi
 }
 
 setup_test_vars()
@@ -523,10 +533,6 @@ execute()
 
     # Remove lines which start with a comma after merging
     sed -i '/^,/d' $COORDSANDACCSFILE
-
-    # Include header - This file will be used later to analyze the data with a Python script
-    COORDSANDACCSFILEWITHHEADER=$(mktemp /tmp/XXXXXX)
-    sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $COORDSANDACCSFILEWITHHEADER
 
     # We don't need time information in column 1 anymore.
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
