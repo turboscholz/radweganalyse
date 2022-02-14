@@ -541,39 +541,43 @@ execute()
     TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
     rm $COORDSANDACCSFILE
 
-    # Get the coordinates with the highest z values in a seperate gpx file
-    HIGH_Z_COORDS=$(mktemp /tmp/XXXXXX)
+    if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
+        # Include header - this file will be used below to analyze the data
+        TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
+        sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $TIMECOORDSZACCSFILE
 
-    # Get the path of this script
-    SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+        # output file of the python script
+        HIGHZCOORDSFILE=$(mktemp /tmp/XXXXXX)
 
-    # Find the gps coordinates where the highest z acceleration values happened
-    python "$SCRIPTPATH"/acceleration_selection.py -i $COORDSANDACCSFILEWITHHEADER -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGH_Z_COORDS -g $GVALUE
+        # Find the gps coordinates where the highest z acceleration values happened
+        python "$SCRIPTPATH"/acceleration_selection.py -i $TIMECOORDSZACCSFILE -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGHZCOORDSFILE -g $GVALUE
 
-    rm $COORDSANDACCSFILEWITHHEADER
+        #sort for the time and remove this column also
+        TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
+        cat $HIGHZCOORDSFILE | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
 
-    TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
-    cat $HIGH_Z_COORDS | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
+        ZCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
+        gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $ZCOORDSGPXFILE
 
-    TIME_SORTED_Z_COORDS_GPX=$(mktemp /tmp/XXXXXX)
-    gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $TIME_SORTED_Z_COORDS_GPX
-    rm $HIGH_Z_COORDS
-    rm $TIME_SORTED_Z_COORDS
+        rm $TIMECOORDSZACCSFILE
+        rm $HIGHZCOORDSFILE
+        rm $TIME_SORTED_Z_COORDS
+    fi
 
     # Merge the last gpx into the first one and create a seperate output file
-    gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
+    gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
     rm $TMPGPXFILE
 
     if [ $UNRESAMPLED == "YES" ]; then
         UNRESAMPLED_FILENAME=$(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
         GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
         # Merge coordinations and max-Z accelerations gpx file
-        gpsbabel -i gpx -f $TIME_SORTED_Z_COORDS_GPX -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F "$UNRESAMPLED_FILENAME"
+        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F "$UNRESAMPLED_FILENAME"
         rm $GPX_ONLYMAXZ_FILE
     fi
 
     rm $COORDSFILE
-    rm $TIME_SORTED_Z_COORDS_GPX
+    rm $ZCOORDSGPXFILE
 }
 
 main()
