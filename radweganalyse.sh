@@ -375,6 +375,45 @@ EOF
     return 0
 }
 
+create_coords_only_gpx_file_test()
+{
+    COORDS=$(export_time_lat_long_speed "$COORDSTESTFILE")
+    GPXFILE=$(create_coords_only_gpx_file $COORDS)
+    sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
+  <bounds minlat="40.000000000" minlon="5.000000000" maxlat="50.000000000" maxlon="6.000000000"/>
+  <trk>
+    <trkseg>
+      <trkpt lat="40.000000000" lon="5.000000000"/>
+      <trkpt lat="50.000000000" lon="6.000000000"/>
+    </trkseg>
+  </trk>
+</gpx>
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $GPXFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $GPXFILE
+        rm $GPXFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $GPXFILE
+    rm $EXPECTED_FILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -396,6 +435,7 @@ EOF
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_file_test
+    create_coords_only_gpx_file_test
     echo
 }
 
@@ -447,6 +487,31 @@ create_gpx_file()
     echo "$TMPFILE"
 }
 
+#This function will create a gpx file with only coordinate files
+#For later use the coordinates need to be in float format.
+create_coords_only_gpx_file()
+{
+    COORDS_TMP_FILE=$(mktemp /tmp/XXXXXX)
+    cut -d, -f2,3 $1 > $COORDS_TMP_FILE
+    COORDSCONVERTEDTMP_FILE=$(mktemp /tmp/XXXXXX)
+    OLDIFS=$IFS
+    IFS=','
+    # We need to convert scientific notation into float numbers
+    while read LAT LON
+    do
+        LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
+        LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
+        echo "$LAT_CONV, $LON_CONV" >> $COORDSCONVERTEDTMP_FILE
+    done < $COORDS_TMP_FILE
+    IFS=$OLDIFS
+
+    sed -i '1i lat, long' $COORDSCONVERTEDTMP_FILE # Include header
+    RETURNFILE=$(create_gpx_file $COORDSCONVERTEDTMP_FILE)
+    rm $COORDS_TMP_FILE
+    rm $COORDSCONVERTEDTMP_FILE
+    echo "$RETURNFILE"
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
@@ -472,24 +537,7 @@ execute()
 
     # Create gpx file with only maximum z acceleration positions
     if [ $UNRESAMPLED == "YES" ]; then
-        COORDS_TMP_FILE=$(mktemp /tmp/XXXXXX)
-        cut -d, -f2,3 $COORDSFILE > $COORDS_TMP_FILE
-        COORDSCONVERTEDTMP_FILE=$(mktemp /tmp/XXXXXX)
-        OLDIFS=$IFS
-        IFS=','
-        # We need to convert scientific notation into float numbers
-        while read LAT LON
-        do
-            LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
-            LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
-            echo "$LAT_CONV, $LON_CONV" >> $COORDSCONVERTEDTMP_FILE
-        done < $COORDS_TMP_FILE
-        IFS=$OLDIFS
-
-        sed -i '1i lat, long' $COORDSCONVERTEDTMP_FILE # Include header
-        GPX_ONLYMAXZ_FILE=$(create_gpx_file $COORDSCONVERTEDTMP_FILE)
-        rm $COORDS_TMP_FILE
-        rm $COORDSCONVERTEDTMP_FILE
+        GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
     fi
 
     rm $COORDSFILE
