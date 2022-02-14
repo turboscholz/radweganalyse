@@ -566,16 +566,16 @@ execute()
             # Merge coordinations and max-Z accelerations gpx file
             gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHFILE -o gpx -F $OUTPUTFILENAME
             rm $GPXPATHFILE
-            rm $ZMAXCOORDSGPXFILE
         else
             # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
             gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHANDZACCFILE -o gpx -F $OUTPUTFILENAME
         fi
 
-        rm $GPXPATHANDZACCFILE
         rm $TIMECOORDSZACCSFILE
         rm $HIGHZCOORDSTMPFILE
         rm $TIMESORTEDZCOORDSTMPFILE
+        rm $ZMAXCOORDSGPXFILE
+        rm $GPXPATHANDZACCFILE
     else
         mv $GPXPATHANDZACCFILE $OUTPUTFILENAME
     fi
