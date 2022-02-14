@@ -535,7 +535,7 @@ execute()
     COORDSANDACCSFILE=$(mktemp /tmp/XXXXXX)
     cp $MERGEDMEASUREDATAFILE $COORDSANDACCSFILE
 
-    # We don't need time information in column 1 anymore.
+    # We don't need time information in column 1 for generating a gpx file
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
