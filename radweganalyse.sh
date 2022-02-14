@@ -547,21 +547,23 @@ execute()
         sed '1i time, y, x, speed, z' $COORDSANDACCSFILE > $TIMECOORDSZACCSFILE
 
         # output file of the python script
-        HIGHZCOORDSFILE=$(mktemp /tmp/XXXXXX)
+        HIGHZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
 
         # Find the gps coordinates where the highest z acceleration values happened
-        python "$SCRIPTPATH"/acceleration_selection.py -i $TIMECOORDSZACCSFILE -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGHZCOORDSFILE -g $GVALUE
+        python "$SCRIPTPATH"/acceleration_selection.py -i $TIMECOORDSZACCSFILE -b $BAD_STREET_POSITIONS -t $TIME_WINDOW -o $HIGHZCOORDSTMPFILE -g $GVALUE
 
-        #sort for the time and remove this column also
-        TIME_SORTED_Z_COORDS=$(mktemp /tmp/XXXXXX)
-        cat $HIGHZCOORDSFILE | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIME_SORTED_Z_COORDS
+        # Sort for the time and remove this column also.
+        # Whith this we can create a gpx file where the positions with
+        # high-z values come first where they occured first on the street.
+        TIMESORTEDZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
+        cat $HIGHZCOORDSTMPFILE | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIMESORTEDZCOORDSTMPFILE
 
         ZCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
-        gpsbabel -i unicsv -f $TIME_SORTED_Z_COORDS -o gpx -F $ZCOORDSGPXFILE
+        gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZCOORDSGPXFILE
 
         rm $TIMECOORDSZACCSFILE
-        rm $HIGHZCOORDSFILE
-        rm $TIME_SORTED_Z_COORDS
+        rm $HIGHZCOORDSTMPFILE
+        rm $TIMESORTEDZCOORDSTMPFILE
     fi
 
     # Merge the last gpx into the first one and create a seperate output file
