@@ -539,7 +539,6 @@ execute()
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
     TMPGPXFILE=$(create_gpx_file $COORDSANDACCSFILE)
-    rm $COORDSANDACCSFILE
 
     if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
         # Include header - this file will be used below to analyze the data
@@ -578,10 +577,11 @@ execute()
         # Merge coordinations and max-Z accelerations gpx file
         gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F "$UNRESAMPLED_FILENAME"
         rm $GPX_ONLYMAXZ_FILE
+        rm $ZCOORDSGPXFILE
     fi
 
     rm $COORDSFILE
-    rm $ZCOORDSGPXFILE
+    rm $COORDSANDACCSFILE
 }
 
 main()
