@@ -539,7 +539,7 @@ execute()
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
-    GPXONLYPATHFILE=$(create_gpx_file $COORDSANDACCSFILE)
+    GPXPATHANDZACCFILE=$(create_gpx_file $COORDSANDACCSFILE)
 
     if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
         # Include header - this file will be used below to analyze the data
@@ -558,26 +558,26 @@ execute()
         TIMESORTEDZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
         cat $HIGHZCOORDSTMPFILE | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIMESORTEDZCOORDSTMPFILE
 
-        ZCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
-        gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZCOORDSGPXFILE
+        ZMAXCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
+        gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZMAXCOORDSGPXFILE
 
         if [ $UNRESAMPLED == "YES" ]; then
-            GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
+            GPXPATHFILE=$(create_coords_only_gpx_file $COORDSFILE)
             # Merge coordinations and max-Z accelerations gpx file
-            gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F $OUTPUTFILENAME
-            rm $GPX_ONLYMAXZ_FILE
-            rm $ZCOORDSGPXFILE
+            gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHFILE -o gpx -F $OUTPUTFILENAME
+            rm $GPXPATHFILE
+            rm $ZMAXCOORDSGPXFILE
         else
             # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
-            gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPXONLYPATHFILE -o gpx -F $OUTPUTFILENAME
+            gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHANDZACCFILE -o gpx -F $OUTPUTFILENAME
         fi
 
-        rm $GPXONLYPATHFILE
+        rm $GPXPATHANDZACCFILE
         rm $TIMECOORDSZACCSFILE
         rm $HIGHZCOORDSTMPFILE
         rm $TIMESORTEDZCOORDSTMPFILE
     else
-        mv $GPXONLYPATHFILE $OUTPUTFILENAME
+        mv $GPXPATHANDZACCFILE $OUTPUTFILENAME
     fi
 
     rm $COORDSFILE
