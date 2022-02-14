@@ -564,11 +564,13 @@ execute()
         rm $TIMECOORDSZACCSFILE
         rm $HIGHZCOORDSTMPFILE
         rm $TIMESORTEDZCOORDSTMPFILE
-    fi
 
-    # Merge the last gpx into the first one and create a seperate output file
-    gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
-    rm $TMPGPXFILE
+        # Merge the GPX file with high Z-coords and the complete path into one output file
+        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $TMPGPXFILE -o gpx -F $OUTPUTFILENAME
+        rm $TMPGPXFILE
+    else
+        mv $TMPGPXFILE $OUTPUTFILENAME
+    fi
 
     if [ $UNRESAMPLED == "YES" ]; then
         UNRESAMPLED_FILENAME=$(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
