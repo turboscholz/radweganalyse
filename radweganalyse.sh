@@ -561,25 +561,23 @@ execute()
         ZCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
         gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZCOORDSGPXFILE
 
-        # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
-        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPXONLYPATHFILE -o gpx -F $OUTPUTFILENAME
+        if [ $UNRESAMPLED == "YES" ]; then
+            GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
+            # Merge coordinations and max-Z accelerations gpx file
+            gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F $OUTPUTFILENAME
+            rm $GPX_ONLYMAXZ_FILE
+            rm $ZCOORDSGPXFILE
+        else
+            # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
+            gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPXONLYPATHFILE -o gpx -F $OUTPUTFILENAME
+        fi
 
         rm $GPXONLYPATHFILE
         rm $TIMECOORDSZACCSFILE
         rm $HIGHZCOORDSTMPFILE
         rm $TIMESORTEDZCOORDSTMPFILE
-
     else
         mv $GPXONLYPATHFILE $OUTPUTFILENAME
-    fi
-
-    if [ $UNRESAMPLED == "YES" ] && [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
-        UNRESAMPLED_FILENAME=$(echo $OUTPUTFILENAME | sed 's/\(^.*\)\.gpx/\1_unresampled.gpx/g')
-        GPX_ONLYMAXZ_FILE=$(create_coords_only_gpx_file $COORDSFILE)
-        # Merge coordinations and max-Z accelerations gpx file
-        gpsbabel -i gpx -f $ZCOORDSGPXFILE -i gpx -f $GPX_ONLYMAXZ_FILE -o gpx -F "$UNRESAMPLED_FILENAME"
-        rm $GPX_ONLYMAXZ_FILE
-        rm $ZCOORDSGPXFILE
     fi
 
     rm $COORDSFILE
