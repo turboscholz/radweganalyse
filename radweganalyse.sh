@@ -336,7 +336,7 @@ EOF
     return 0
 }
 
-create_gpx_file_test()
+create_gpx_with_track_file_test()
 {
     INPUTFILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $INPUTFILE
@@ -524,7 +524,7 @@ EOF
     export_time_lat_long_speed_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
-    create_gpx_file_test
+    create_gpx_with_track_file_test
     create_coords_only_gpx_file_test
     analyze_data_via_script_test
     sort_for_and_remove_time_column_test
@@ -571,7 +571,7 @@ merge_coords_and_zacc_file()
     echo "$TMPFILE"
 }
 
-create_gpx_file()
+create_gpx_with_track_file()
 {
     # Create the gpx file with acceleration data
     TMPFILE=$(mktemp /tmp/XXXXXX)
@@ -598,7 +598,7 @@ create_coords_only_gpx_file()
     IFS=$OLDIFS
 
     sed -i '1i lat, long' $COORDSCONVERTEDTMP_FILE # Include header
-    RETURNFILE=$(create_gpx_file $COORDSCONVERTEDTMP_FILE)
+    RETURNFILE=$(create_gpx_with_track_file $COORDSCONVERTEDTMP_FILE)
     rm $COORDS_TMP_FILE
     rm $COORDSCONVERTEDTMP_FILE
     echo "$RETURNFILE"
@@ -642,7 +642,7 @@ execute()
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
-    GPXPATHANDZACCFILE=$(create_gpx_file $COORDSANDACCSFILE)
+    GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
     if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
         # Include header - this file will be used below to analyze the data
