@@ -717,7 +717,7 @@ execute()
 
         if [ $MAXONLY == "YES" ]; then
             GPXPATHFILE=$(create_coords_only_gpx_file $COORDSFILE)
-            # Merge coordinations and max-Z accelerations gpx file
+            # Merge path coordinates and max-Z accelerations gpx file (dont export actual z acceleration data)
             gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHFILE -o gpx -F $OUTPUTFILENAME
             rm $GPXPATHFILE
         else
