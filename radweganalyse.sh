@@ -466,6 +466,44 @@ EOF
     return 0
 }
 
+sort_for_and_remove_time_column_test()
+{
+    TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $TMPINPUTFILE
+time, y, x, speed, z
+5.0,30.0,5,6,7
+1.0,20.0,5,6,7
+EOF
+    TMPOUTFILE=$(sort_for_and_remove_time_column $TMPINPUTFILE)
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+ y, x, speed, z
+20.0,5,6,7
+30.0,5,6,7
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $TMPOUTFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $TMPOUTFILE
+        rm $TMPOUTFILE
+        rm $EXPECTED_FILE
+        rm $TMPINPUTFILE
+        return 1
+    fi
+    rm $TMPOUTFILE
+    rm $EXPECTED_FILE
+    rm $TMPINPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -489,6 +527,7 @@ EOF
     create_gpx_file_test
     create_coords_only_gpx_file_test
     analyze_data_via_script_test
+    sort_for_and_remove_time_column_test
     echo
 }
 
@@ -576,6 +615,16 @@ analyze_data_via_script()
     python "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -g $4 -o $5
 }
 
+sort_for_and_remove_time_column()
+{
+    # Sort for the time and remove this column also.
+    # Whith this we can create a gpx file where the positions with
+    # high-z values come first where they occured first on the street.
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    cat $1 | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TMPFILE
+    echo $TMPFILE
+}
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
@@ -606,11 +655,7 @@ execute()
         # Find the gps coordinates where the highest z acceleration values happened
         analyze_data_via_script $TIMECOORDSZACCSFILE $BAD_STREET_POSITIONS $TIME_WINDOW $GVALUE $HIGHZCOORDSTMPFILE
 
-        # Sort for the time and remove this column also.
-        # Whith this we can create a gpx file where the positions with
-        # high-z values come first where they occured first on the street.
-        TIMESORTEDZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
-        cat $HIGHZCOORDSTMPFILE | (read -r; printf "%s\n" "$REPLY"; sort -g) | cut -d, -f2,3,4,5 > $TIMESORTEDZCOORDSTMPFILE
+        TIMESORTEDZCOORDSTMPFILE=$(sort_for_and_remove_time_column $HIGHZCOORDSTMPFILE)
 
         ZMAXCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
         gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZMAXCOORDSGPXFILE
