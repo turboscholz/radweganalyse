@@ -24,7 +24,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
                       where the gravitational acceleration is not taken into account, default "Accelerometer.csv"
                       This file does not need to be existing if the file "Linear Acceleration.csv" is available.
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
-    --onlymax         Only create a gpx file pointing to positions with maximum z-acceleration
+    --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
 -t, --window          The time window in seconds in which a no other value with high z accelerations will be searched, default 2
     --test            Apply an automatic regression test to check if all dependencies work as expected
 EOF
@@ -83,7 +83,7 @@ parse_params() {
   ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
   BAD_STREET_POSITIONS_ARG="5"
   TIME_WINDOW_ARG="2"
-  UNRESAMPLED=NO
+  MAXONLY=NO
   TEST=NO
 
   while :; do
@@ -110,8 +110,8 @@ parse_params() {
       TIME_WINDOW_ARG="${2-}"
       shift
       ;;
-    --onlymax)
-      UNRESAMPLED=YES ;;
+    --maxonly)
+      MAXONLY=YES ;;
     --test)
       TEST=YES ;;
     -?*) die "Unknown option: $1" ;;
@@ -715,7 +715,7 @@ execute()
 
         ZMAXCOORDSGPXFILE=$(create_gpx_without_track_file $TIMESORTEDZCOORDSTMPFILE)
 
-        if [ $UNRESAMPLED == "YES" ]; then
+        if [ $MAXONLY == "YES" ]; then
             GPXPATHFILE=$(create_coords_only_gpx_file $COORDSFILE)
             # Merge coordinations and max-Z accelerations gpx file
             gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHFILE -o gpx -F $OUTPUTFILENAME
