@@ -385,6 +385,53 @@ EOF
     return 0
 }
 
+create_gpx_without_track_file_test()
+{
+    INPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $INPUTFILE
+y, x, speed, z
+40,5,1,1.000000000E-1
+EOF
+
+    GPXFILE=$(mktemp /tmp/XXXXXX)
+    gpsbabel -i unicsv -f $INPUTFILE -o gpx -F $GPXFILE
+    sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
+  <bounds minlat="40.000000000" minlon="5.000000000" maxlat="40.000000000" maxlon="5.000000000"/>
+  <wpt lat="40.000000000" lon="5.000000000">
+    <ele>0.100</ele>
+    <name>WPT001</name>
+    <cmt>WPT001</cmt>
+    <desc>WPT001</desc>
+  </wpt>
+</gpx>
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $GPXFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $GPXFILE
+        rm $GPXFILE
+        rm $EXPECTED_FILE
+        rm $INPUTFILE
+        return 1
+    fi
+    rm $GPXFILE
+    rm $EXPECTED_FILE
+    rm $INPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 create_coords_only_gpx_file_test()
 {
     COORDS=$(export_time_lat_long_speed "$COORDSTESTFILE")
@@ -525,6 +572,7 @@ EOF
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_with_track_file_test
+    create_gpx_without_track_file_test
     create_coords_only_gpx_file_test
     analyze_data_via_script_test
     sort_for_and_remove_time_column_test
@@ -576,6 +624,14 @@ create_gpx_with_track_file()
     # Create the gpx file with acceleration data
     TMPFILE=$(mktemp /tmp/XXXXXX)
     gpsbabel -t -i unicsv -f $1 -o gpx -F $TMPFILE
+    echo "$TMPFILE"
+}
+
+create_gpx_without_track_file()
+{
+    # Create the gpx file with acceleration data
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    gpsbabel -i unicsv -f $1 -o gpx -F $TMPFILE
     echo "$TMPFILE"
 }
 
@@ -657,8 +713,7 @@ execute()
 
         TIMESORTEDZCOORDSTMPFILE=$(sort_for_and_remove_time_column $HIGHZCOORDSTMPFILE)
 
-        ZMAXCOORDSGPXFILE=$(mktemp /tmp/XXXXXX)
-        gpsbabel -i unicsv -f $TIMESORTEDZCOORDSTMPFILE -o gpx -F $ZMAXCOORDSGPXFILE
+        ZMAXCOORDSGPXFILE=$(create_gpx_without_track_file $TIMESORTEDZCOORDSTMPFILE)
 
         if [ $UNRESAMPLED == "YES" ]; then
             GPXPATHFILE=$(create_coords_only_gpx_file $COORDSFILE)
