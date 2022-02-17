@@ -328,9 +328,10 @@ merge_coords_and_zacc_file_test()
 {
     ZACCLSFILETMP=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $ZACCLSFILETMP
-0.000000000E0,1.000000000E-1
-5.000000000E-1,2.000000000E-1
-1.000000000E0,3.000000000E-1
+0	1.000000000E-1
+0.5	2.000000000E-1
+5	4.000000000E-1
+10	5.000000000E-1
 EOF
 
     RESAMPLED_COORDS_FILE=$(mktemp /tmp/XXXXXX)
@@ -350,7 +351,8 @@ EOF
     cat <<EOF > $EXPECTED_FILE
 0,40,5,1,1.000000000E-1
 0.5,45,5.5,1.5,2.000000000E-1
-1,50,6,2,3.000000000E-1
+5,55,6.5,2.5,4.000000000E-1
+10,60,7,3,5.000000000E-1
 EOF
     set +e
     cmp --silent $EXPECTED_FILE $MERGEDTESTFILE
@@ -649,11 +651,24 @@ merge_coords_and_zacc_file()
 {
     # Convert tabs to comma in coordination file
     sed -i 's/\t/,/g;' $1
-    # Remove timestamps from acceleration file
-    sed -i 's/^[^,]*,//g' $2
+    sed -i 's/\t/,/g;' $2
 
+    # join both tables using the first column. As this is a float value
+    # we can't use the bash built-in 'join', instead we have to do it
+    # line by line with a str comparison.
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    paste -d, $2 $1 > $TMPFILE
+    OLDIFS=$IFS
+    IFS=','
+    while read TIME LAT LON SPEED
+    do
+        match_line=$(egrep -e "^$TIME," $2 | sed -e 's/^[^,]*,//g')
+        if [ "$match_line" != "" ]; then
+            echo "$TIME,$LAT,$LON,$SPEED,$match_line" >> $TMPFILE
+        fi
+        match_line=""
+    done < $1
+    IFS=$OLDIFS
+
     echo "$TMPFILE"
 }
 
@@ -724,7 +739,8 @@ execute()
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
-    MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLSFILE)
+    ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
+    MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLS_RESAMPLED_FILE)
 
     # Remove lines which start with a comma after merging (if there are any)
     sed -i '/^,/d' $MERGEDMEASUREDATAFILE
@@ -775,6 +791,7 @@ execute()
     rm $COORDSFILE
     rm $COORDSANDACCSFILE
     rm $ZACCLSFILE
+    rm $ZACCLS_RESAMPLED_FILE
     rm $COORDS_RESAMPLED_FILE
 }
 
