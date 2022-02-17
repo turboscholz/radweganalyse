@@ -312,10 +312,14 @@ EOF
         cat $RESAMPLED_COORDS_FILE
         rm $RESAMPLED_COORDS_FILE
         rm $EXPECTED_FILE
+        rm $COORDSFILETMP
+        rm $ZACCLSFILETMP
         return 1
     fi
     rm $RESAMPLED_COORDS_FILE
     rm $EXPECTED_FILE
+    rm $COORDSFILETMP
+    rm $ZACCLSFILETMP
     msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
     return 0
 }
@@ -340,7 +344,7 @@ EOF
 
     MERGEDTESTFILE=$(merge_coords_and_zacc_file $RESAMPLED_COORDS_FILE $ZACCLSFILETMP)
 
-    rm $COORDSFILETMP $ZACCLSFILETMP $RESAMPLED_COORDS_FILE
+    rm $ZACCLSFILETMP $RESAMPLED_COORDS_FILE
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
@@ -495,10 +499,12 @@ EOF
         cat $GPXFILE
         rm $GPXFILE
         rm $EXPECTED_FILE
+        rm $COORDS
         return 1
     fi
     rm $GPXFILE
     rm $EXPECTED_FILE
+    rm $COORDS
     msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
     return 0
 }
