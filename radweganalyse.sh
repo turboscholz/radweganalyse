@@ -324,9 +324,11 @@ EOF
 0	40	5	1
 0.5	45	5.5	1.5
 1	50	6	2
+5	55	6.5	2.5
+10	60	7	3
 EOF
 
-    MERGEDTESTFILE=$(merge_coords_and_zacc_file $ZACCLSFILETMP $RESAMPLED_COORDS_FILE)
+    MERGEDTESTFILE=$(merge_coords_and_zacc_file $RESAMPLED_COORDS_FILE $ZACCLSFILETMP)
 
     rm $COORDSFILETMP $ZACCLSFILETMP $RESAMPLED_COORDS_FILE
 
@@ -629,10 +631,10 @@ generate_resampled_coords_file(){
 
 merge_coords_and_zacc_file()
 {
-    # Remove timestamps from acceleration file
-    sed -i 's/^[^,]*,//g' $1
     # Convert tabs to comma in coordination file
-    sed -i 's/\t/,/g;' $2
+    sed -i 's/\t/,/g;' $1
+    # Remove timestamps from acceleration file
+    sed -i 's/^[^,]*,//g' $2
 
     TMPFILE=$(mktemp /tmp/XXXXXX)
     paste -d, $2 $1 > $TMPFILE
@@ -706,7 +708,7 @@ execute()
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
-    MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
+    MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLSFILE)
 
     # Remove lines which start with a comma after merging (if there are any)
     sed -i '/^,/d' $MERGEDMEASUREDATAFILE
