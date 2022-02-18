@@ -330,6 +330,7 @@ merge_coords_and_zacc_file_test()
     cat <<EOF > $ZACCLSFILETMP
 0	1.000000000E-1
 0.5	2.000000000E-1
+1	3.000000000E-1
 5	4.000000000E-1
 10	5.000000000E-1
 EOF
@@ -351,6 +352,7 @@ EOF
     cat <<EOF > $EXPECTED_FILE
 0,40,5,1,1.000000000E-1
 0.5,45,5.5,1.5,2.000000000E-1
+1,50,6,2,3.000000000E-1
 5,55,6.5,2.5,4.000000000E-1
 10,60,7,3,5.000000000E-1
 EOF
@@ -652,23 +654,11 @@ merge_coords_and_zacc_file()
     # Convert tabs to comma in coordination file
     sed -i 's/\t/,/g;' $1
     sed -i 's/\t/,/g;' $2
+    # We don't need time information in column 1 in the second file
+    sed -i 's/^[^,]*,//g' $2
 
-    # join both tables using the first column. As this is a float value
-    # we can't use the bash built-in 'join', instead we have to do it
-    # line by line with a str comparison.
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    OLDIFS=$IFS
-    IFS=','
-    while read TIME LAT LON SPEED
-    do
-        match_line=$(egrep -e "^$TIME," $2 | sed -e 's/^[^,]*,//g')
-        if [ "$match_line" != "" ]; then
-            echo "$TIME,$LAT,$LON,$SPEED,$match_line" >> $TMPFILE
-        fi
-        match_line=""
-    done < $1
-    IFS=$OLDIFS
-
+    paste -d, $1 $2 > $TMPFILE
     echo "$TMPFILE"
 }
 
