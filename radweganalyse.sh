@@ -286,11 +286,47 @@ export_time_lat_long_speed_test()
 5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
-    COORDS=$(export_time_lat_long_speed "$TMPINPUTFILE")
+    COORDS=$(export_time_lat_long_speed 0 "$TMPINPUTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
 5.000000000E-1,4.500000000E1,5.500000000E0,1.500000000E0
+1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $COORDS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $COORDS
+        rm $COORDS
+        rm $EXPECTED_FILE
+        rm $TMPINPUTFILE
+        return 1
+    fi
+    rm $COORDS
+    rm $EXPECTED_FILE
+    rm $TMPINPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+export_time_lat_long_speed_with_starttime_test()
+{
+    TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $TMPINPUTFILE
+"Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
+0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,1.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+EOF
+    COORDS=$(export_time_lat_long_speed 0.7 "$TMPINPUTFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
 1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
 EOF
     set +e
@@ -510,7 +546,7 @@ EOF
 
 create_coords_only_gpx_file_test()
 {
-    COORDS=$(export_time_lat_long_speed "$COORDSTESTFILE")
+    COORDS=$(export_time_lat_long_speed 0 "$COORDSTESTFILE")
     GPXFILE=$(create_coords_only_gpx_file $COORDS)
     sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
 
@@ -648,6 +684,7 @@ EOF
     export_times_and_zaccs_in_file_test
     export_times_and_zaccs_in_file_with_starttime_test
     export_time_lat_long_speed_test
+    export_time_lat_long_speed_with_starttime_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_with_track_file_test
@@ -702,9 +739,37 @@ export_times_and_zaccs_in_file()
 # Leave time, latitude, longitue, speed
 export_time_lat_long_speed ()
 {
+    STARTTIME=$1
+    INPUT="$2"
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    cut "$1" -d, -f1-3,5 > $TMPFILE
-    sed -i '1d;' $TMPFILE
+    if [ "$STARTTIME" == "0" ]; then
+        cut "$INPUT" -d, -f1-3,5 > $TMPFILE
+        sed -i '1d;' $TMPFILE
+    else
+        INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
+        cp "$INPUT" "$INPUTTMPCPY_FILE"
+        sed -i '1d;' $INPUTTMPCPY_FILE
+        TOTALLINES=$(wc -l $INPUTTMPCPY_FILE | cut -d\  -f 1)
+        LINEINDEX=0
+        OLDIFS=$IFS
+        IFS=','
+        # We need to convert scientific notation into float numbers
+        while read TIME REST
+        do
+            compare=$(echo | awk "{ print ($TIME > $STARTTIME) ? 1 : 0 }")
+            if [ $compare -eq 1 ]; then
+                break
+            fi
+            LINEINDEX=$(expr $LINEINDEX + 1)
+        done < $INPUTTMPCPY_FILE
+        IFS=$OLDIFS
+        REMAININGLINES=$(expr $TOTALLINES - $LINEINDEX)
+        INPUTTMPCPY2_FILE=$(mktemp /tmp/XXXXXX)
+        tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
+        cut $INPUTTMPCPY2_FILE -d, -f1-3,5 > $TMPFILE
+        rm $INPUTTMPCPY_FILE
+        rm $INPUTTMPCPY2_FILE
+    fi
     echo "$TMPFILE"
 }
 
@@ -792,7 +857,7 @@ sort_for_and_remove_time_column()
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file $START "$ACCELEROMETERFILE")
-    COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
+    COORDSFILE=$(export_time_lat_long_speed $START "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
     MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLS_RESAMPLED_FILE)
