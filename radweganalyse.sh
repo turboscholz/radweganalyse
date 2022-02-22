@@ -25,7 +25,8 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
                       This file does not need to be existing if the file "Linear Acceleration.csv" is available.
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
--t, --window          The time window in seconds in which a no other value with high z accelerations will be searched, default 2
+-s, --start           The time in seconds in the measured data at which the analysis should start, default 0
+-t, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
     --test            Apply an automatic regression test to check if all dependencies work as expected
 EOF
   exit
@@ -85,6 +86,7 @@ parse_params() {
   TIME_WINDOW_ARG="2"
   MAXONLY=NO
   TEST=NO
+  START=0
 
   while :; do
     case "${1-}" in
@@ -108,6 +110,10 @@ parse_params() {
       ;;
     -t | --window)
       TIME_WINDOW_ARG="${2-}"
+      shift
+      ;;
+    -s | --start)
+      START_ARG="${2-}"
       shift
       ;;
     --maxonly)
@@ -155,6 +161,9 @@ setup_input_vars()
     fi
     if [ "${TIME_WINDOW_ARG}" != "" ]; then
         TIME_WINDOW="${TIME_WINDOW_ARG}"
+    fi
+    if [ "${START_ARG}" != "" ]; then
+        START="${START_ARG}"
     fi
 }
 
@@ -214,11 +223,38 @@ write_files_test()
 
 export_times_and_zaccs_in_file_test()
 {
-    ACCLS=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
+    ACCLS=$(export_times_and_zaccs_in_file 0 "$ACCSTESTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,1.000000000E-1
 5.000000000E-1,2.000000000E-1
+1.000000000E0,3.000000000E-1
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $ACCLS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $ACCLS
+        rm $ACCLS
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $ACCLS
+    rm $EXPECTED_FILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+export_times_and_zaccs_in_file_with_starttime_test()
+{
+    ACCLS=$(export_times_and_zaccs_in_file 0.7 "$ACCSTESTFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
 1.000000000E0,3.000000000E-1
 EOF
     set +e
@@ -610,6 +646,7 @@ EOF
 
     write_files_test
     export_times_and_zaccs_in_file_test
+    export_times_and_zaccs_in_file_with_starttime_test
     export_time_lat_long_speed_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
@@ -628,9 +665,29 @@ EOF
 # Just leave the time and acceleration in z-direction
 export_times_and_zaccs_in_file()
 {
+    STARTTIME=$1
+    INPUT="$2"
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    cut "$1" -d, -f1,4 > $TMPFILE
-    sed -i '1d;' $TMPFILE
+    if [ "$STARTTIME" == "0" ]; then
+        cut "$INPUT" -d, -f1,4 > $TMPFILE
+        sed -i '1d;' $TMPFILE
+    else
+        INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
+        cp "$INPUT" "$INPUTTMPCPY_FILE"
+        sed -i '1d;' $INPUTTMPCPY_FILE
+        OLDIFS=$IFS
+        IFS=','
+        # We need to convert scientific notation into float numbers
+        while read TIME XACC YACC ZACC
+        do
+            compare=$(echo | awk "{ print ($TIME > $STARTTIME) ? 1 : 0 }")
+            if [ $compare -eq 1 ]; then
+                echo "$TIME,$ZACC" >> $TMPFILE
+            fi
+        done < $INPUTTMPCPY_FILE
+        rm $INPUTTMPCPY_FILE
+        IFS=$OLDIFS
+    fi
     echo "$TMPFILE"
 }
 
@@ -726,7 +783,7 @@ sort_for_and_remove_time_column()
 
 execute()
 {
-    ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
+    ZACCLSFILE=$(export_times_and_zaccs_in_file $START "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
