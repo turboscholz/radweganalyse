@@ -223,38 +223,11 @@ write_files_test()
 
 export_times_and_zaccs_in_file_test()
 {
-    ACCLS=$(export_times_and_zaccs_in_file 0 "$ACCSTESTFILE")
+    ACCLS=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,1.000000000E-1
 5.000000000E-1,2.000000000E-1
-1.000000000E0,3.000000000E-1
-EOF
-    set +e
-    cmp --silent $EXPECTED_FILE $ACCLS
-    retval=$?
-    set -e
-    if [ $retval -ne 0 ]; then
-        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
-        msg "expected:"
-        cat $EXPECTED_FILE
-        msg "got:"
-        cat $ACCLS
-        rm $ACCLS
-        rm $EXPECTED_FILE
-        return 1
-    fi
-    rm $ACCLS
-    rm $EXPECTED_FILE
-    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
-    return 0
-}
-
-export_times_and_zaccs_in_file_with_starttime_test()
-{
-    ACCLS=$(export_times_and_zaccs_in_file 0.7 "$ACCSTESTFILE")
-    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
-    cat <<EOF > $EXPECTED_FILE
 1.000000000E0,3.000000000E-1
 EOF
     set +e
@@ -682,7 +655,6 @@ EOF
 
     write_files_test
     export_times_and_zaccs_in_file_test
-    export_times_and_zaccs_in_file_with_starttime_test
     export_time_lat_long_speed_test
     export_time_lat_long_speed_with_starttime_test
     generate_resampled_coords_file_test
@@ -702,37 +674,10 @@ EOF
 # Just leave the time and acceleration in z-direction
 export_times_and_zaccs_in_file()
 {
-    STARTTIME=$1
-    INPUT="$2"
+    INPUT="$1"
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    if [ "$STARTTIME" == "0" ]; then
-        cut "$INPUT" -d, -f1,4 > $TMPFILE
-        sed -i '1d;' $TMPFILE
-    else
-        INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
-        cp "$INPUT" "$INPUTTMPCPY_FILE"
-        sed -i '1d;' $INPUTTMPCPY_FILE
-        TOTALLINES=$(wc -l $INPUTTMPCPY_FILE | cut -d\  -f 1)
-        LINEINDEX=0
-        OLDIFS=$IFS
-        IFS=','
-        # We need to convert scientific notation into float numbers
-        while read TIME XACC YACC ZACC
-        do
-            compare=$(echo | awk "{ print ($TIME > $STARTTIME) ? 1 : 0 }")
-            if [ $compare -eq 1 ]; then
-                break
-            fi
-            LINEINDEX=$(expr $LINEINDEX + 1)
-        done < $INPUTTMPCPY_FILE
-        IFS=$OLDIFS
-        REMAININGLINES=$(expr $TOTALLINES - $LINEINDEX)
-        INPUTTMPCPY2_FILE=$(mktemp /tmp/XXXXXX)
-        tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
-        cut $INPUTTMPCPY2_FILE -d, -f1,4 > $TMPFILE
-        rm $INPUTTMPCPY_FILE
-        rm $INPUTTMPCPY2_FILE
-    fi
+    cut "$INPUT" -d, -f1,4 > $TMPFILE
+    sed -i '1d;' $TMPFILE
     echo "$TMPFILE"
 }
 
@@ -856,7 +801,7 @@ sort_for_and_remove_time_column()
 
 execute()
 {
-    ZACCLSFILE=$(export_times_and_zaccs_in_file $START "$ACCELEROMETERFILE")
+    ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed $START "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
