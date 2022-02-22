@@ -675,6 +675,8 @@ export_times_and_zaccs_in_file()
         INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
         cp "$INPUT" "$INPUTTMPCPY_FILE"
         sed -i '1d;' $INPUTTMPCPY_FILE
+        TOTALLINES=$(wc -l $INPUTTMPCPY_FILE | cut -d\  -f 1)
+        LINEINDEX=0
         OLDIFS=$IFS
         IFS=','
         # We need to convert scientific notation into float numbers
@@ -682,11 +684,17 @@ export_times_and_zaccs_in_file()
         do
             compare=$(echo | awk "{ print ($TIME > $STARTTIME) ? 1 : 0 }")
             if [ $compare -eq 1 ]; then
-                echo "$TIME,$ZACC" >> $TMPFILE
+                break
             fi
+            LINEINDEX=$(expr $LINEINDEX + 1)
         done < $INPUTTMPCPY_FILE
-        rm $INPUTTMPCPY_FILE
         IFS=$OLDIFS
+        REMAININGLINES=$(expr $TOTALLINES - $LINEINDEX)
+        INPUTTMPCPY2_FILE=$(mktemp /tmp/XXXXXX)
+        tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
+        cut $INPUTTMPCPY2_FILE -d, -f1,4 > $TMPFILE
+        rm $INPUTTMPCPY_FILE
+        rm $INPUTTMPCPY2_FILE
     fi
     echo "$TMPFILE"
 }
