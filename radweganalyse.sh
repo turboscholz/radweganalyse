@@ -57,6 +57,7 @@ check_dependencies() {
   which GMT      >&2 > /dev/null || die "GMT binary not found"
   which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found"
   which awk      >&2 > /dev/null || die "awk binary not found"
+  which bc       >&2 > /dev/null || die "bc binary not found"
   which sed      >&2 > /dev/null || die "sed binary not found"
 
   # Get the path of this script
@@ -301,6 +302,51 @@ EOF
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $COORDS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $COORDS
+        rm $COORDS
+        rm $EXPECTED_FILE
+        rm $TMPINPUTFILE
+        return 1
+    fi
+    rm $COORDS
+    rm $EXPECTED_FILE
+    rm $TMPINPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+export_time_lat_long_speed_with_starttime_test_time_window_test()
+{
+    # When using --start, the function export_time_lat_long_speed() should
+    # use the timewindow for setting the upper limit of the time in the location input.
+    # This test will test the behaviour.
+    TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $TMPINPUTFILE
+"Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
+0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,1.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+1.500000000E0,6.000000000E1,7.000000000E0,1.200000000E2,3.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+2.000000000E0,7.000000000E1,8.000000000E0,1.200000000E2,4.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+3.000000000E0,8.000000000E1,9.000000000E0,1.200000000E2,5.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+EOF
+    COORDS=$(export_time_lat_long_speed 0.5 "$TMPINPUTFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+5.000000000E-1,4.500000000E1,5.500000000E0,1.500000000E0
+1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
+1.500000000E0,6.000000000E1,7.000000000E0,3.000000000E0
+2.000000000E0,7.000000000E1,8.000000000E0,4.000000000E0
 EOF
     set +e
     cmp --silent $EXPECTED_FILE $COORDS
@@ -657,6 +703,7 @@ EOF
     export_times_and_zaccs_in_file_test
     export_time_lat_long_speed_test
     export_time_lat_long_speed_with_starttime_test
+    export_time_lat_long_speed_with_starttime_test_time_window_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_with_track_file_test
@@ -691,6 +738,7 @@ export_time_lat_long_speed ()
         cut "$INPUT" -d, -f1-3,5 > $TMPFILE
         sed -i '1d;' $TMPFILE
     else
+        # Find Start and set the output file accordingly
         INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
         cp "$INPUT" "$INPUTTMPCPY_FILE"
         sed -i '1d;' $INPUTTMPCPY_FILE
@@ -701,7 +749,7 @@ export_time_lat_long_speed ()
         # We need to convert scientific notation into float numbers
         while read TIME REST
         do
-            compare=$(echo | awk "{ print ($TIME > $STARTTIME) ? 1 : 0 }")
+            compare=$(echo | awk "{ print ($TIME >= $STARTTIME) ? 1 : 0 }")
             if [ $compare -eq 1 ]; then
                 break
             fi
@@ -711,9 +759,30 @@ export_time_lat_long_speed ()
         REMAININGLINES=$(expr $TOTALLINES - $LINEINDEX)
         INPUTTMPCPY2_FILE=$(mktemp /tmp/XXXXXX)
         tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
-        cut $INPUTTMPCPY2_FILE -d, -f1-3,5 > $TMPFILE
+
+        # Now search for the stop index
+        STOPTIME=$(echo $STARTTIME + $TIME_WINDOW | bc)
+        TOTALLINES=$(wc -l $INPUTTMPCPY2_FILE | cut -d\  -f 1)
+        LINEINDEX=0
+        OLDIFS=$IFS
+        IFS=','
+        # We need to convert scientific notation into float numbers
+        while read TIME REST
+        do
+            compare=$(echo | awk "{ print ($TIME > $STOPTIME) ? 1 : 0 }")
+            if [ $compare -eq 1 ]; then
+                break
+            fi
+            LINEINDEX=$(expr $LINEINDEX + 1)
+        done < $INPUTTMPCPY2_FILE
+        IFS=$OLDIFS
+        INPUTTMPCPY3_FILE=$(mktemp /tmp/XXXXXX)
+        head -n $LINEINDEX $INPUTTMPCPY2_FILE > $INPUTTMPCPY3_FILE
+
+        cut $INPUTTMPCPY3_FILE -d, -f1-3,5 > $TMPFILE
         rm $INPUTTMPCPY_FILE
         rm $INPUTTMPCPY2_FILE
+        rm $INPUTTMPCPY3_FILE
     fi
     echo "$TMPFILE"
 }
