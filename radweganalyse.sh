@@ -927,6 +927,7 @@ execute()
     rm $ZACCLSFILE
     rm $ZACCLS_RESAMPLED_FILE
     rm $COORDS_RESAMPLED_FILE
+    rm $MERGEDMEASUREDATAFILE
 }
 
 main()
