@@ -81,8 +81,8 @@ parse_params() {
   # default values of variables set from params
   OUTPUT_ARG="xyz_data.gpx"
   LOCATIONFILE="Location.csv"
-  ACCELEROMETERFILE="Accelerometer.csv"
-  ACCELEROMETERFILE_ALTERNATE="Linear Acceleration.csv"
+  ACCELEROMETERFILE_WITHG="Accelerometer.csv"
+  ACCELEROMETERFILE_WITHOUTG="Linear Acceleration.csv"
   BAD_STREET_POSITIONS_ARG="5"
   TIME_WINDOW_ARG="2"
   MAXONLY=NO
@@ -135,18 +135,6 @@ parse_params() {
 
 setup_input_vars()
 {
-    # Detect which acceleration file is available, set GVALUE accordingly
-    GVALUE="0.0"
-    if [[ $TEST == "NO" ]] && [[ "${ACCELEROMETERFILE_ARG}" == "" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
-        if [ ! -f "$ACCELEROMETERFILE_ALTERNATE" ]; then
-            echo "Acceleration input file not found"
-            exit 1
-        else
-            ACCELEROMETERFILE="$ACCELEROMETERFILE_ALTERNATE"
-            GVALUE="9.81"
-        fi
-    fi
-
     # Assign values of script arguments
     if [ "${OUTPUT_ARG}" != "" ]; then
         OUTPUTFILENAME="${OUTPUT_ARG}"
@@ -165,6 +153,21 @@ setup_input_vars()
     fi
     if [ "${START_ARG}" != "" ]; then
         START="${START_ARG}"
+    fi
+
+    # Detect which acceleration file is available, set GVALUE accordingly
+    GVALUE="0.0"
+    if [[ $TEST == "NO" ]] && [[ "${ACCELEROMETERFILE}" == "" ]] ; then
+        if [[ -f "$ACCELEROMETERFILE_WITHG" ]]; then
+            ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHG"
+            GVALUE="9.81"
+        elif [[ -f "$ACCELEROMETERFILE_WITHOUTG" ]]; then
+            ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHOUTG"
+        else
+            die "Please provide an Acceleration input file via -l option"
+        fi
+    elif [[ $TEST == "NO" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
+        die "Acceleration input file \"$ACCELEROMETERFILE\" not found - aborting"
     fi
 }
 
