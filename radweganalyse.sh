@@ -749,7 +749,6 @@ export_time_lat_long_speed ()
         LINEINDEX=0
         OLDIFS=$IFS
         IFS=','
-        # We need to convert scientific notation into float numbers
         while read TIME REST
         do
             compare=$(echo | awk "{ print ($TIME >= $STARTTIME) ? 1 : 0 }")
@@ -769,7 +768,6 @@ export_time_lat_long_speed ()
         LINEINDEX=0
         OLDIFS=$IFS
         IFS=','
-        # We need to convert scientific notation into float numbers
         while read TIME REST
         do
             compare=$(echo | awk "{ print ($TIME > $STOPTIME) ? 1 : 0 }")
