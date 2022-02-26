@@ -820,6 +820,10 @@ export_time_lat_long_speed ()
         rm $INPUTTMPCPY_FILE
         rm $INPUTTMPCPY2_FILE
         rm $INPUTTMPCPY3_FILE
+
+        if [[ $LINEINDEXTOP -ge $TOTALLINES ]] || [[ $LINEINDEXBOTTOM -eq 0 ]]; then
+            die "Too less data points available. Choose another start time or time window!"
+        fi
     fi
     echo "$TMPFILE"
 }
