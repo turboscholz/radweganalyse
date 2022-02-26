@@ -19,8 +19,8 @@ def main(argv):
     # Get full command-line arguments
     full_cmd_arguments = argv
 
-    short_options = "hi:o:t:b:g:"
-    long_options = ["help", "input=", "output=", "timewindow=", "numberofbumps=", "gvalue"]
+    short_options = "hi:o:t:b:"
+    long_options = ["help", "input=", "output=", "timewindow=", "numberofbumps="]
 
     try:
         arguments, values = getopt.getopt(full_cmd_arguments, short_options, long_options)
@@ -35,7 +35,6 @@ def main(argv):
     output_csv=""
     timevariation=2
     numrow=5
-    gvalue=0.0
 
     # Evaluate given options
     for current_argument, current_value in arguments:
@@ -50,10 +49,8 @@ def main(argv):
             timevariation = int(current_value)
         elif current_argument in ("-b", "--numberofbumps"):
             numrow = int(current_value)
-        elif current_argument in ("-g", "--gvalue"):
-            gvalue = float(current_value)
 
-    df_selected = fkt_select(input_csv, numrow, timevariation, gvalue)
+    df_selected = fkt_select(input_csv, numrow, timevariation)
 
     # output
     if output_csv != "":
@@ -65,18 +62,18 @@ def print_usage():
     print('usage:')
     print()
     print('python acceleration_selection.py -i <input.csv> -b <number of rows>\n'\
-          '-t <time difference> -o <output.csv> -g <gvalue correction>')
+          '-t <time difference> -o <output.csv>')
     print()
     print('-t, -o and -g are optional values')
 
 
-def fkt_select(input_csv, numrow, timevariation, gvalue):
+def fkt_select(input_csv, numrow, timevariation):
     # read csv
     df=pd.read_csv(input_csv, sep=',')
     # replace space in column names
     df.columns = df.columns.str.replace(' ', '')
     # adjust acceleration z
-    df['z'] = abs(df['z'] - gvalue)
+    df['z'] = abs(df['z'])
     # sort by z
     df_sorted = df.sort_values('z', ascending=False)
     df_sorted = df_sorted.reset_index()

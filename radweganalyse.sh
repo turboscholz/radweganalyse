@@ -620,7 +620,7 @@ time, y, x, speed, z
 5.0,49.0,8.6,6.9,58.7
 EOF
     TMPOUTFILE=$(mktemp /tmp/XXXXXX)
-    analyze_data_via_script $TMPINPUTFILE 1 1 0 $TMPOUTFILE
+    analyze_data_via_script $TMPINPUTFILE 1 1 $TMPOUTFILE
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
@@ -687,6 +687,42 @@ EOF
     return 0
 }
 
+correct_zaccs_for_gvalue_test()
+{
+    GVALUE=9.81
+    INPUT_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $INPUT_FILE
+0.000000000E0	1.000000000E-1
+1.000000000E0	0.000000000E0
+EOF
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+0.000000000	-9.710000000
+1.000000000	-9.810000000
+EOF
+
+    COOR_FILE=$(correct_zaccs_for_gvalue $GVALUE $INPUT_FILE)
+
+    set +e
+    cmp --silent $EXPECTED_FILE $COOR_FILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $COOR_FILE
+        rm $COOR_FILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $COOR_FILE
+    rm $EXPECTED_FILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -704,6 +740,7 @@ EOF
 
     write_files_test
     export_times_and_zaccs_in_file_test
+    correct_zaccs_for_gvalue_test
     export_time_lat_long_speed_test
     export_time_lat_long_speed_with_starttime_test
     export_time_lat_long_speed_with_starttime_test_time_window_test
@@ -856,7 +893,7 @@ create_coords_only_gpx_file()
 analyze_data_via_script()
 {
     # Find the gps coordinates where the highest z acceleration values happened
-    python "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -g $4 -o $5
+    python "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -o $4
 }
 
 sort_for_and_remove_time_column()
@@ -869,12 +906,39 @@ sort_for_and_remove_time_column()
     echo $TMPFILE
 }
 
+correct_zaccs_for_gvalue()
+{
+    CORRECTION="$1"
+    INPUTFILE="$2"
+    OUTFILE=$(mktemp /tmp/XXXXXX)
+
+    while read TIME ACC
+    do
+        TIME=$(echo $TIME | awk '{printf("%3.9f",$0);}')
+        ACC=$(echo $ACC | awk '{printf("%3.9f",$0);}')
+        CORR_ACC=$(echo $ACC - $CORRECTION | bc)
+        echo "$TIME	$CORR_ACC" >> $OUTFILE
+    done < $INPUTFILE
+
+    echo $OUTFILE
+}
+
+
 execute()
 {
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed $START "$LOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
+
+    #Correct the measured acceleration values for the g-value (time consuming!)
+    if [[ "GVALUE" != "0.0" ]]; then
+        TMPFILE=$(mktemp /tmp/XXXXXX)
+        mv $ZACCLS_RESAMPLED_FILE $TMPFILE
+        ZACCLS_RESAMPLED_FILE=$(correct_zaccs_for_gvalue $GVALUE $TMPFILE)
+        rm $TMPFILE
+    fi
+
     MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLS_RESAMPLED_FILE)
 
     # Remove lines which start with a comma after merging (if there are any)
@@ -898,7 +962,7 @@ execute()
         HIGHZCOORDSTMPFILE=$(mktemp /tmp/XXXXXX)
 
         # Find the gps coordinates where the highest z acceleration values happened
-        analyze_data_via_script $TIMECOORDSZACCSFILE $BAD_STREET_POSITIONS $TIME_WINDOW $GVALUE $HIGHZCOORDSTMPFILE
+        analyze_data_via_script $TIMECOORDSZACCSFILE $BAD_STREET_POSITIONS $TIME_WINDOW $HIGHZCOORDSTMPFILE
 
         TIMESORTEDZCOORDSTMPFILE=$(sort_for_and_remove_time_column $HIGHZCOORDSTMPFILE)
 
