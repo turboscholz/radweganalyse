@@ -783,7 +783,7 @@ export_time_lat_long_speed ()
         cp "$INPUT" "$INPUTTMPCPY_FILE"
         sed -i '1d;' $INPUTTMPCPY_FILE
         TOTALLINES=$(wc -l $INPUTTMPCPY_FILE | cut -d\  -f 1)
-        LINEINDEX=0
+        LINEINDEXTOP=0
         OLDIFS=$IFS
         IFS=','
         while read TIME REST
@@ -792,17 +792,16 @@ export_time_lat_long_speed ()
             if [ $compare -eq 1 ]; then
                 break
             fi
-            LINEINDEX=$(expr $LINEINDEX + 1)
+            LINEINDEXTOP=$(expr $LINEINDEXTOP + 1)
         done < $INPUTTMPCPY_FILE
         IFS=$OLDIFS
-        REMAININGLINES=$(expr $TOTALLINES - $LINEINDEX)
+        REMAININGLINES=$(expr $TOTALLINES - $LINEINDEXTOP)
         INPUTTMPCPY2_FILE=$(mktemp /tmp/XXXXXX)
         tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
 
         # Now search for the stop index
         STOPTIME=$(echo $STARTTIME + $TIME_WINDOW | bc)
-        TOTALLINES=$(wc -l $INPUTTMPCPY2_FILE | cut -d\  -f 1)
-        LINEINDEX=0
+        LINEINDEXBOTTOM=0
         OLDIFS=$IFS
         IFS=','
         while read TIME REST
@@ -811,11 +810,11 @@ export_time_lat_long_speed ()
             if [ $compare -eq 1 ]; then
                 break
             fi
-            LINEINDEX=$(expr $LINEINDEX + 1)
+            LINEINDEXBOTTOM=$(expr $LINEINDEXBOTTOM + 1)
         done < $INPUTTMPCPY2_FILE
         IFS=$OLDIFS
         INPUTTMPCPY3_FILE=$(mktemp /tmp/XXXXXX)
-        head -n $LINEINDEX $INPUTTMPCPY2_FILE > $INPUTTMPCPY3_FILE
+        head -n $LINEINDEXBOTTOM $INPUTTMPCPY2_FILE > $INPUTTMPCPY3_FILE
 
         cut $INPUTTMPCPY3_FILE -d, -f1-3,5 > $TMPFILE
         rm $INPUTTMPCPY_FILE
