@@ -932,7 +932,7 @@ execute()
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
 
     #Correct the measured acceleration values for the g-value (time consuming!)
-    if [[ "GVALUE" != "0.0" ]]; then
+    if [[ "$GVALUE" != "0.0" ]]; then
         TMPFILE=$(mktemp /tmp/XXXXXX)
         mv $ZACCLS_RESAMPLED_FILE $TMPFILE
         ZACCLS_RESAMPLED_FILE=$(correct_zaccs_for_gvalue $GVALUE $TMPFILE)
