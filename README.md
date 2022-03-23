@@ -8,8 +8,8 @@ Furthermore, you will find the experiment description file `radweganalyse.phypho
 can be imported into the phyphox app. It will create a new experiment entry for the parallel
 read-out of the GPS sensor and the acceleration sensor of your mobile phone.
 
-After exporting the measured data as comma-separated CSV data, these files are located on the
-smartphone as a zip file. This zip file needs to be copied over to your PC. Unzip this file in
+After exporting the measured data as comma-separated CSV files, these files are located on the
+smartphone as a zip archive. This zip needs to be copied over to your PC. Unzip it into
 a new folder. Then, execute the script `radweganalyse.sh` in the same directory where you
 have placed the CSV files.
 
