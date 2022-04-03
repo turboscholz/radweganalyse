@@ -24,3 +24,13 @@ tests pass you can be sure that the script is doing what it should be doing.
 
 The python script `acceleration_selection.py` is used to find the maximum z-acceleration
 in the measured data.
+
+## Dependencies  
+
+- sample1d: This tool is part of the Generic Mapping Tools (GMT) package. Install GMT with `sudo apt-get install gmt`
+- gpsbable: This tool is a standalone program, also available in many linux distributions. Install with `sudo apt-get install gpsbabel`
+- bc: This is a command line calculator. Install with `sudo apt-get install bc`
+
+Other dependencies should be awailable on a standard Linux system.
+
+Further, the bash script calls a python script for data analysis. You need to install python on your system as well with `pandas` package: `sudo apt-get install python3-pandas`
