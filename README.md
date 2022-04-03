@@ -33,4 +33,4 @@ in the measured data.
 
 Other dependencies should be awailable on a standard Linux system.
 
-Further, the bash script calls a python script for data analysis. You need to install python on your system as well with `pandas` package: `sudo apt-get install python3-pandas`
+Further, the bash script calls a python script for data analysis. You need to install python on your system and the `pandas` package: `sudo apt-get install python3-pandas`
