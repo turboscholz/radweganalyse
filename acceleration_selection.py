@@ -11,8 +11,7 @@
 
 # python ./acceleration_selection.py /home/maik/uwe/xyz_data.csv 5 2
 
-# load modules
-import pandas as pd
+# load modules; Check for pandas happens at the end
 import sys, getopt
 
 def main(argv):
@@ -99,6 +98,11 @@ def fkt_select(input_csv, numrow, timevariation):
     return(df_selected)
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    try:
+        import pandas as pd
+    except ModuleNotFoundError as error:
+        print("You dont have module pandas installed. In Ubuntu, install with pip or do \"sudo apt install python3-pandas\".")
+        exit()
+    main(sys.argv[1:])
 
 
