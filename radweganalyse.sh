@@ -54,10 +54,10 @@ die() {
 }
 
 check_dependencies() {
-  which GMT      >&2 > /dev/null || die "GMT binary not found"
-  which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found"
-  which awk      >&2 > /dev/null || die "awk binary not found"
-  which bc       >&2 > /dev/null || die "bc binary not found"
+  which GMT      >&2 > /dev/null || die "GMT binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
+  which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found. In Ubuntu, install with \"sudo apt-get install gpsbabel\"."
+  which awk      >&2 > /dev/null || die "awk binary not found. In Ubuntu, install with \"sudo apt-get install mawk\"."
+  which bc       >&2 > /dev/null || die "bc binary not found. In Ubuntu, install with \"sudo apt-get install bc\"."
   which sed      >&2 > /dev/null || die "sed binary not found"
 
   # Get the path of this script
