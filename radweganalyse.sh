@@ -481,11 +481,10 @@ EOF
     GPXFILE=$(mktemp /tmp/XXXXXX)
     gpsbabel -t -i unicsv -f $INPUTFILE -o gpx -F $GPXFILE
     sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+    sed -i $GPXFILE -re '1,2d' #Remove lines 1 and 2 in the Output-GPX file (this is just a header)
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
   <bounds minlat="40.000000000" minlon="5.000000000" maxlat="40.000000000" maxlon="5.000000000"/>
   <trk>
     <trkseg>
@@ -530,11 +529,10 @@ EOF
     GPXFILE=$(mktemp /tmp/XXXXXX)
     gpsbabel -i unicsv -f $INPUTFILE -o gpx -F $GPXFILE
     sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+    sed -i $GPXFILE -re '1,2d' #Remove lines 1 and 2 in the Output-GPX file (this is just a header)
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
   <bounds minlat="40.000000000" minlon="5.000000000" maxlat="40.000000000" maxlon="5.000000000"/>
   <wpt lat="40.000000000" lon="5.000000000">
     <ele>0.100</ele>
@@ -571,11 +569,10 @@ create_coords_only_gpx_file_test()
     COORDS=$(export_time_lat_long_speed 0 "$COORDSTESTFILE")
     GPXFILE=$(create_coords_only_gpx_file $COORDS)
     sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
+    sed -i $GPXFILE -re '1,2d' #Remove lines 1 and 2 in the Output-GPX file (this is just a header)
 
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
-<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.0" creator="GPSBabel - https://www.gpsbabel.org" xmlns="http://www.topografix.com/GPX/1/0">
   <bounds minlat="40.000000000" minlon="5.000000000" maxlat="50.000000000" maxlon="6.000000000"/>
   <trk>
     <trkseg>
