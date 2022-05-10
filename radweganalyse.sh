@@ -909,8 +909,7 @@ convert_data()
     3) sed 's/,/./g; s/\t/,/g' "$INPUT" > $TMPFILE ;;
     #Semicolon, decimal comma
     4) sed 's/,/./g; s/;/,/g' "$INPUT" > $TMPFILE ;;
-    -?*) die "Unknown format option: $FORMAT" ;;
-    *) break ;;
+    *) die "Unknown format option: $FORMAT" ;;
     esac
 
     echo "$TMPFILE"
