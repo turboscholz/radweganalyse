@@ -18,6 +18,12 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 
 -h, --help            Print this help and exit
 -v, --verbose         Print script debug info
+-f, --format          Input format of the csv data files
+                      0: Comma, decimal point (default)
+                      1: Tabulator, decimal point
+                      2: Semicolon, decimal point
+                      3: Tabulator, decimal comma
+                      4: Semicolon, decimal comma
 -o, --output          The output file name can be overridden, default is "xyz_data.gpx"
 -l, --locations       This is the input file of the phyphox experiment, default is "Location.csv"
 -a, --accelerations   This is the acceleration measurement file from phyphox
@@ -79,6 +85,7 @@ setup_test_vars()
 
 parse_params() {
   # default values of variables set from params
+  FORMAT="0"
   OUTPUT_ARG="xyz_data.gpx"
   LOCATIONFILE="Location.csv"
   ACCELEROMETERFILE_WITHG="Accelerometer.csv"
@@ -93,6 +100,10 @@ parse_params() {
     case "${1-}" in
     -h | --help) usage ;;
     -v | --verbose) set -x ;;
+    -f | --format)
+      FORMAT="${2-}"
+      shift
+      ;;
     -o | --output)
       OUTPUT_ARG="${2-}"
       shift
@@ -220,6 +231,130 @@ write_files_test()
         output_actual_vs_expected $lines 3
         return 1
     fi
+
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+convert_data_test()
+{
+    TABDECIFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    cat <<EOF > $TABDECIFILE
+"Time (s)"	"Linear Acceleration x (m/s^2)"	"Linear Acceleration y (m/s^2)"	"Linear Acceleration z (m/s^2)"
+3.822818600E-2	1.573801041E-2	-1.144409180E-2	1.094026566E-1
+4.323306900E-2	4.181289673E-2	-2.140426636E-2	1.027250290E-1
+4.826846900E-2	8.366203308E-2	-7.002162933E-2	1.464896202E-1
+EOF
+    SEMIDECIFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    cat <<EOF > $SEMIDECIFILE
+"Time (s)";"Linear Acceleration x (m/s^2)";"Linear Acceleration y (m/s^2)";"Linear Acceleration z (m/s^2)"
+3.822818600E-2;1.573801041E-2;-1.144409180E-2;1.094026566E-1
+4.323306900E-2;4.181289673E-2;-2.140426636E-2;1.027250290E-1
+4.826846900E-2;8.366203308E-2;-7.002162933E-2;1.464896202E-1
+EOF
+    TABCOMMAFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    cat <<EOF > $TABCOMMAFILE
+"Time (s)"	"Linear Acceleration x (m/s^2)"	"Linear Acceleration y (m/s^2)"	"Linear Acceleration z (m/s^2)"
+3,822818600E-2	1,573801041E-2	-1,144409180E-2	1,094026566E-1
+4,323306900E-2	4,181289673E-2	-2,140426636E-2	1,027250290E-1
+4,826846900E-2	8,366203308E-2	-7,002162933E-2	1,464896202E-1
+EOF
+    SEMICOMMAFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    cat <<EOF > $SEMICOMMAFILE
+"Time (s)";"Linear Acceleration x (m/s^2)";"Linear Acceleration y (m/s^2)";"Linear Acceleration z (m/s^2)"
+3,822818600E-2;1,573801041E-2;-1,144409180E-2;1,094026566E-1
+4,323306900E-2;4,181289673E-2;-2,140426636E-2;1,027250290E-1
+4,826846900E-2;8,366203308E-2;-7,002162933E-2;1,464896202E-1
+EOF
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+"Time (s)","Linear Acceleration x (m/s^2)","Linear Acceleration y (m/s^2)","Linear Acceleration z (m/s^2)"
+3.822818600E-2,1.573801041E-2,-1.144409180E-2,1.094026566E-1
+4.323306900E-2,4.181289673E-2,-2.140426636E-2,1.027250290E-1
+4.826846900E-2,8.366203308E-2,-7.002162933E-2,1.464896202E-1
+EOF
+
+    # 1) Tabulator, decimal point
+    INPUTFORMAT=1
+    CONVERTEDFILE=$(convert_data "$INPUTFORMAT" "$TABDECIFILE")
+    set +e
+    cmp --silent $EXPECTED_FILE $CONVERTEDFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]} (FORMAT: $INPUTFORMAT): ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $CONVERTEDFILE
+        rm $CONVERTEDFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $CONVERTEDFILE
+
+    # 2) Semicolon, decimal point
+    INPUTFORMAT=2
+    CONVERTEDFILE=$(convert_data "$INPUTFORMAT" "$SEMIDECIFILE")
+    set +e
+    cmp --silent $EXPECTED_FILE $CONVERTEDFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]} (FORMAT: $INPUTFORMAT): ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $CONVERTEDFILE
+        rm $CONVERTEDFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $CONVERTEDFILE
+
+    # 3) Tabulator, decimal comma
+    INPUTFORMAT=3
+    CONVERTEDFILE=$(convert_data "$INPUTFORMAT" "$TABCOMMAFILE")
+    set +e
+    cmp --silent $EXPECTED_FILE $CONVERTEDFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]} (FORMAT: $INPUTFORMAT): ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $CONVERTEDFILE
+        rm $CONVERTEDFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $CONVERTEDFILE
+
+    # 4) Semicolon, decimal comma
+    INPUTFORMAT=4
+    CONVERTEDFILE=$(convert_data "$INPUTFORMAT" "$SEMICOMMAFILE")
+    set +e
+    cmp --silent $EXPECTED_FILE $CONVERTEDFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]} (FORMAT: $INPUTFORMAT): ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $CONVERTEDFILE
+        rm $CONVERTEDFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $CONVERTEDFILE
+
+    rm $SEMICOMMAFILE
+    rm $SEMIDECIFILE
+    rm $TABCOMMAFILE
+    rm $TABDECIFILE
 
     msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
     return 0
@@ -736,6 +871,7 @@ EOF
 EOF
 
     write_files_test
+    convert_data_test
     export_times_and_zaccs_in_file_test
     correct_zaccs_for_gvalue_test
     export_time_lat_long_speed_test
@@ -754,6 +890,31 @@ EOF
 ################################################################################
 ################### BELOW THIS LINE THE ACTUAL LOGIC HAPPENS ###################
 ################################################################################
+
+#Convert input data into standard format using comma and decimal point
+convert_data()
+{
+    INPUTFMT="$1"
+    INPUT="$2"
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+
+    case "$INPUTFMT" in
+    #Comma, decimal point, nothing to reformat
+    0) cp "$INPUT" $TMPFILE ;;
+    #Tabulator, decimal point
+    1) sed 's/\t/,/g' "$INPUT" > $TMPFILE ;;
+    #Semicolon, decimal point
+    2) sed 's/;/,/g' "$INPUT" > $TMPFILE ;;
+    #Tabulator, decimal comma
+    3) sed 's/,/./g; s/\t/,/g' "$INPUT" > $TMPFILE ;;
+    #Semicolon, decimal comma
+    4) sed 's/,/./g; s/;/,/g' "$INPUT" > $TMPFILE ;;
+    -?*) die "Unknown format option: $FORMAT" ;;
+    *) break ;;
+    esac
+
+    echo "$TMPFILE"
+}
 
 # Just leave the time and acceleration in z-direction
 export_times_and_zaccs_in_file()
@@ -827,7 +988,13 @@ export_time_lat_long_speed ()
 
 generate_resampled_coords_file(){
     TMPFILE=$(mktemp /tmp/XXXXXX)
+    set +e
     GMT sample1d $1 -N$2 > $TMPFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${YELLOW}sample1d returned an error - did you specify correct input file format? (see help on --format)${NOFORMAT}"
+    fi
     echo "$TMPFILE"
 }
 
@@ -926,8 +1093,10 @@ correct_zaccs_for_gvalue()
 
 execute()
 {
-    ZACCLSFILE=$(export_times_and_zaccs_in_file "$ACCELEROMETERFILE")
-    COORDSFILE=$(export_time_lat_long_speed $START "$LOCATIONFILE")
+    FORMATEDACCELEROMETERFILE=$(convert_data "$FORMAT" "$ACCELEROMETERFILE")
+    FORMATEDLOCATIONFILE=$(convert_data "$FORMAT" "$LOCATIONFILE")
+    ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
+    COORDSFILE=$(export_time_lat_long_speed $START "$FORMATEDLOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
 
@@ -989,6 +1158,8 @@ execute()
 
     rm $COORDSFILE
     rm $COORDSANDACCSFILE
+    rm $FORMATEDACCELEROMETERFILE
+    rm $FORMATEDLOCATIONFILE
     rm $ZACCLSFILE
     rm $ZACCLS_RESAMPLED_FILE
     rm $COORDS_RESAMPLED_FILE
