@@ -60,7 +60,7 @@ die() {
 }
 
 check_dependencies() {
-  command -v GMT      >&2 > /dev/null || die "GMT binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
+  command -v gmt >&2 > /dev/null || command -v GMT >&2 > /dev/null || die "gmt binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
   command -v gpsbabel >&2 > /dev/null || die "gpsbabel binary not found. In Ubuntu, install with \"sudo apt-get install gpsbabel\"."
   command -v awk      >&2 > /dev/null || die "awk binary not found. In Ubuntu, install with \"sudo apt-get install mawk\"."
   command -v bc       >&2 > /dev/null || die "bc binary not found. In Ubuntu, install with \"sudo apt-get install bc\"."
