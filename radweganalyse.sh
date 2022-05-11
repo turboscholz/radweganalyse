@@ -60,11 +60,11 @@ die() {
 }
 
 check_dependencies() {
-  which GMT      >&2 > /dev/null || die "GMT binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
-  which gpsbabel >&2 > /dev/null || die "gpsbabel binary not found. In Ubuntu, install with \"sudo apt-get install gpsbabel\"."
-  which awk      >&2 > /dev/null || die "awk binary not found. In Ubuntu, install with \"sudo apt-get install mawk\"."
-  which bc       >&2 > /dev/null || die "bc binary not found. In Ubuntu, install with \"sudo apt-get install bc\"."
-  which sed      >&2 > /dev/null || die "sed binary not found"
+  command -v GMT      >&2 > /dev/null || die "GMT binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
+  command -v gpsbabel >&2 > /dev/null || die "gpsbabel binary not found. In Ubuntu, install with \"sudo apt-get install gpsbabel\"."
+  command -v awk      >&2 > /dev/null || die "awk binary not found. In Ubuntu, install with \"sudo apt-get install mawk\"."
+  command -v bc       >&2 > /dev/null || die "bc binary not found. In Ubuntu, install with \"sudo apt-get install bc\"."
+  command -v sed      >&2 > /dev/null || die "sed binary not found"
 
   # Get the path of this script
   SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
