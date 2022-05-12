@@ -82,8 +82,11 @@ check_dependencies() {
 set_gmt_binary()
 {
     GMTVERSION=""
-    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -ge 5 ]]; then
+    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -eq 5 ]]; then
         GMTVERSION="5"
+    fi
+    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -ge 6 ]]; then
+        GMTVERSION="6"
     fi
     if [ "$GMTVERSION" == "" ]; then
         GMTVERSION="$(GMT --version 2>&1 | head -1 | sed 's/GMT Version //g' | cut -d. -f 1)"
@@ -1019,14 +1022,19 @@ export_time_lat_long_speed ()
 
 generate_resampled_coords_file(){
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    if [ "$GMTVERSION" == 4 ]; then
+    if [ "$GMTVERSION" -eq 4 ]; then
         set +e
         GMT sample1d $1 -N$2 > $TMPFILE
         retval=$?
         set -e
-    else
+    elif [ "$GMTVERSION" -eq 5 ]; then
         set +e
         gmt sample1d $1 -N$2 -sa > $TMPFILE
+        retval=$?
+        set -e
+    else
+        set +e
+        gmt sample1d $1 -T$2 -sa > $TMPFILE
         retval=$?
         set -e
     fi
