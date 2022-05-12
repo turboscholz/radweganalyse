@@ -14,7 +14,7 @@ to see how the bike lane quality is and where problematic locations are
 "hidden" on the bike path.
 
 Dependencies: GMT's "sample1d", gpsbable, basic linux commands
-              python for finding largest values, pandas python package
+              python3 for finding largest values, pandas python package
 
 -h, --help            Print this help and exit
 -v, --verbose         Print script debug info
@@ -97,6 +97,19 @@ setup_test_vars()
 {
     ACCSTESTFILE=$(mktemp /tmp/XXXXXX --dry-run)
     COORDSTESTFILE=$(mktemp /tmp/XXXXXX --dry-run)
+}
+
+check_for_python3()
+{
+    ISPYTHON3HERE="yes"
+    set +e
+    command -v python3 2>&1 >> /dev/null
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        ISPYTHON3HERE="no"
+        msg "${YELLOW}Warning:${NOFORMAT} python3 not found - no data analysis possible. In Ubuntu, install with \"sudo apt-get install python\"."
+    fi
 }
 
 parse_params() {
@@ -757,6 +770,9 @@ EOF
 
 analyze_data_via_script_test()
 {
+    if [[ "$ISPYTHON3HERE" == "no" ]]; then
+        return 0
+    fi
     if [ $MAXZCALCSCRIPTFOUND -eq 0 ]; then
         msg "${FUNCNAME[0]}: ${YELLOW}ignored${NOFORMAT} - External analysis script not found"
         return 0
@@ -1082,7 +1098,7 @@ create_coords_only_gpx_file()
 analyze_data_via_script()
 {
     # Find the gps coordinates where the highest z acceleration values happened
-    python "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -o $4
+    python3 "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -o $4
 }
 
 sort_for_and_remove_time_column()
@@ -1144,7 +1160,7 @@ execute()
 
     GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
-    if [ $MAXZCALCSCRIPTFOUND -eq 1 ]; then
+    if [[ "$ISPYTHON3HERE" == "yes" ]] && [[ $MAXZCALCSCRIPTFOUND -eq 1 ]]; then
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
         sed '1i time, y, x, speed, z' $MERGEDMEASUREDATAFILE > $TIMECOORDSZACCSFILE
@@ -1197,6 +1213,7 @@ main()
     parse_params "$@"
     setup_input_vars
     setup_test_vars
+    check_for_python3
 
     # Execute tests if needed
     if [ $TEST == "YES" ]; then
