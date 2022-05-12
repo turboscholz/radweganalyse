@@ -77,6 +77,22 @@ check_dependencies() {
   fi
 }
 
+# This function is needed to find out which version of gmt is installed.
+# The programm expects different arguments depending on the available version.
+set_gmt_binary()
+{
+    GMTVERSION=""
+    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -ge 5 ]]; then
+        GMTVERSION="5"
+    fi
+    if [ "$GMTVERSION" == "" ]; then
+        GMTVERSION="$(GMT --version 2>&1 | head -1 | sed 's/GMT Version //g' | cut -d. -f 1)"
+    fi
+    if [ "$GMTVERSION" == "" ]; then
+        die "Unknown gmt version installed!"
+    fi
+}
+
 setup_test_vars()
 {
     ACCSTESTFILE=$(mktemp /tmp/XXXXXX --dry-run)
@@ -987,10 +1003,17 @@ export_time_lat_long_speed ()
 
 generate_resampled_coords_file(){
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    set +e
-    GMT sample1d $1 -N$2 > $TMPFILE
-    retval=$?
-    set -e
+    if [ "$GMTVERSION" == 4 ]; then
+        set +e
+        GMT sample1d $1 -N$2 > $TMPFILE
+        retval=$?
+        set -e
+    else
+        set +e
+        gmt sample1d $1 -N$2 -sa > $TMPFILE
+        retval=$?
+        set -e
+    fi
     if [ $retval -ne 0 ]; then
         msg "${FUNCNAME[0]}: ${YELLOW}sample1d returned an error - did you specify correct input file format? (see help on --format)${NOFORMAT}"
     fi
@@ -1170,6 +1193,7 @@ main()
     # Some setup
     setup_colors
     check_dependencies
+    set_gmt_binary
     parse_params "$@"
     setup_input_vars
     setup_test_vars
