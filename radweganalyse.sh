@@ -396,6 +396,46 @@ EOF
     return 0
 }
 
+remove_duplicates_test()
+{
+    DOUBLEROWFILE=$(mktemp /tmp/XXXXXX --dry-run)
+    cat <<EOF > $DOUBLEROWFILE
+"Time (s)"	"Linear Acceleration x (m/s^2)"	"Linear Acceleration y (m/s^2)"	"Linear Acceleration z (m/s^2)"
+3.822818600E-2	1.573801041E-2	-1.144409180E-2	1.094026566E-1
+3.822818600E-2	1.573801041E-2	-1.144409180E-2	1.094026566E-1
+4.323306900E-2	4.181289673E-2	-2.140426636E-2	1.027250290E-1
+EOF
+
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+"Time (s)"	"Linear Acceleration x (m/s^2)"	"Linear Acceleration y (m/s^2)"	"Linear Acceleration z (m/s^2)"
+3.822818600E-2	1.573801041E-2	-1.144409180E-2	1.094026566E-1
+4.323306900E-2	4.181289673E-2	-2.140426636E-2	1.027250290E-1
+EOF
+
+    set -e
+    CONVERTEDFILE=$(remove_duplicates "$DOUBLEROWFILE")
+    set +e
+    cmp --silent $EXPECTED_FILE $CONVERTEDFILE
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]} (FORMAT: $INPUTFORMAT): ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $CONVERTEDFILE
+        rm $CONVERTEDFILE
+        rm $EXPECTED_FILE
+        return 1
+    fi
+    rm $CONVERTEDFILE
+    rm $DOUBLEROWFILE
+
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 export_times_and_zaccs_in_file_test()
 {
     ACCLS=$(export_times_and_zaccs_in_file "$ACCSTESTFILE")
@@ -910,6 +950,7 @@ EOF
 EOF
 
     write_files_test
+    remove_duplicates_test
     convert_data_test
     export_times_and_zaccs_in_file_test
     correct_zaccs_for_gvalue_test
@@ -929,6 +970,14 @@ EOF
 ################################################################################
 ################### BELOW THIS LINE THE ACTUAL LOGIC HAPPENS ###################
 ################################################################################
+
+remove_duplicates()
+{
+    INPUT="$1"
+    TMPFILE=$(mktemp /tmp/XXXXXX)
+    cat "$INPUT" | uniq > $TMPFILE
+    echo "$TMPFILE"
+}
 
 #Convert input data into standard format using comma and decimal point
 convert_data()
@@ -1143,8 +1192,10 @@ correct_zaccs_for_gvalue()
 
 execute()
 {
-    FORMATEDACCELEROMETERFILE=$(convert_data "$FORMAT" "$ACCELEROMETERFILE")
-    FORMATEDLOCATIONFILE=$(convert_data "$FORMAT" "$LOCATIONFILE")
+    NODOUBLELINESACCELEROMETERFILE=$(remove_duplicates "$ACCELEROMETERFILE")
+    NODOUBLELINESLOCATIONFILE=$(remove_duplicates "$LOCATIONFILE")
+    FORMATEDACCELEROMETERFILE=$(convert_data "$FORMAT" "$NODOUBLELINESACCELEROMETERFILE")
+    FORMATEDLOCATIONFILE=$(convert_data "$FORMAT" "$NODOUBLELINESLOCATIONFILE")
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
     COORDSFILE=$(export_time_lat_long_speed $START "$FORMATEDLOCATIONFILE")
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
@@ -1208,6 +1259,8 @@ execute()
 
     rm $COORDSFILE
     rm $COORDSANDACCSFILE
+    rm $NODOUBLELINESACCELEROMETERFILE
+    rm $NODOUBLELINESLOCATIONFILE
     rm $FORMATEDACCELEROMETERFILE
     rm $FORMATEDLOCATIONFILE
     rm $ZACCLSFILE
