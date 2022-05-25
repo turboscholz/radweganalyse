@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -eo pipefail
 trap cleanup SIGINT SIGTERM ERR EXIT
 
