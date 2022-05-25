@@ -322,6 +322,7 @@ EOF
         cat $CONVERTEDFILE
         rm $CONVERTEDFILE
         rm $EXPECTED_FILE
+        rm $TABDECIFILE
         return 1
     fi
     rm $CONVERTEDFILE
@@ -341,6 +342,7 @@ EOF
         cat $CONVERTEDFILE
         rm $CONVERTEDFILE
         rm $EXPECTED_FILE
+        rm $SEMIDECIFILE
         return 1
     fi
     rm $CONVERTEDFILE
@@ -360,6 +362,7 @@ EOF
         cat $CONVERTEDFILE
         rm $CONVERTEDFILE
         rm $EXPECTED_FILE
+        rm $TABCOMMAFILE
         return 1
     fi
     rm $CONVERTEDFILE
@@ -379,6 +382,7 @@ EOF
         cat $CONVERTEDFILE
         rm $CONVERTEDFILE
         rm $EXPECTED_FILE
+        rm $SEMICOMMAFILE
         return 1
     fi
     rm $CONVERTEDFILE
