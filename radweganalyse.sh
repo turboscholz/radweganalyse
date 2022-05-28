@@ -1077,17 +1077,17 @@ generate_resampled_coords_file(){
     TMPFILE=$(mktemp /tmp/XXXXXX)
     if [ "$GMTVERSION" -eq 4 ]; then
         set +e
-        GMT sample1d $1 -N$2 > $TMPFILE
+        GMT sample1d $1 -N$2 -V > $TMPFILE
         retval=$?
         set -e
     elif [ "$GMTVERSION" -eq 5 ]; then
         set +e
-        gmt sample1d $1 -N$2 -sa > $TMPFILE
+        gmt sample1d $1 -N$2 -sa -V > $TMPFILE
         retval=$?
         set -e
     else
         set +e
-        gmt sample1d $1 -T$2 -sa > $TMPFILE
+        gmt sample1d $1 -T$2 -sa -V > $TMPFILE
         retval=$?
         set -e
     fi
@@ -1192,23 +1192,33 @@ correct_zaccs_for_gvalue()
 
 execute()
 {
+    msg "Remove duplicate a_z's"
     NODOUBLELINESACCELEROMETERFILE=$(remove_duplicates "$ACCELEROMETERFILE")
+    msg "Remove duplicate coords"
     NODOUBLELINESLOCATIONFILE=$(remove_duplicates "$LOCATIONFILE")
+    msg "Format a_z"
     FORMATEDACCELEROMETERFILE=$(convert_data "$FORMAT" "$NODOUBLELINESACCELEROMETERFILE")
+    msg "Format coords"
     FORMATEDLOCATIONFILE=$(convert_data "$FORMAT" "$NODOUBLELINESLOCATIONFILE")
+    msg "Generate a_z's"
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
+    msg "Generate coords"
     COORDSFILE=$(export_time_lat_long_speed $START "$FORMATEDLOCATIONFILE")
+    msg "Resample coords"
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
+    msg "Resample a_z's"
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
 
     #Correct the measured acceleration values for the g-value (time consuming!)
     if [[ "$GVALUE" != "0.0" ]]; then
+        msg "Correct for g"
         TMPFILE=$(mktemp /tmp/XXXXXX)
         mv $ZACCLS_RESAMPLED_FILE $TMPFILE
         ZACCLS_RESAMPLED_FILE=$(correct_zaccs_for_gvalue $GVALUE $TMPFILE)
         rm $TMPFILE
     fi
 
+    msg "Merge coords and a_z's"
     MERGEDMEASUREDATAFILE=$(merge_coords_and_zacc_file $COORDS_RESAMPLED_FILE $ZACCLS_RESAMPLED_FILE)
 
     # Remove lines which start with a comma after merging (if there are any)
@@ -1221,9 +1231,11 @@ execute()
     sed -i 's/^[^,]*,//g' $COORDSANDACCSFILE
     sed -i '1i y, x, speed, z' $COORDSANDACCSFILE # Include header
 
+    msg "Create gpx output file"
     GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
     if [[ "$ISPYTHON3HERE" == "yes" ]] && [[ $MAXZCALCSCRIPTFOUND -eq 1 ]]; then
+        msg "Find maximum positions"
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
         sed '1i time, y, x, speed, z' $MERGEDMEASUREDATAFILE > $TIMECOORDSZACCSFILE
