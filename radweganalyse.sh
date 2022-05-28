@@ -1178,13 +1178,8 @@ correct_zaccs_for_gvalue()
     INPUTFILE="$2"
     OUTFILE=$(mktemp /tmp/XXXXXX)
 
-    while read TIME ACC
-    do
-        TIME=$(echo $TIME | awk '{printf("%3.9f",$0);}')
-        ACC=$(echo $ACC | awk '{printf("%3.9f",$0);}')
-        CORR_ACC=$(echo $ACC - $CORRECTION | bc)
-        echo "$TIME	$CORR_ACC" >> $OUTFILE
-    done < $INPUTFILE
+    # $1=TIME, $2=ACC_Z
+    awk -v s=${CORRECTION} '{printf("%3.9f\t%3.9f\n",$1,$2-s);}' ${INPUTFILE} >> $OUTFILE
 
     echo $OUTFILE
 }
