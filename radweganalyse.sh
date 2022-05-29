@@ -1159,6 +1159,7 @@ analyze_data_via_script()
 {
     # Find the gps coordinates where the highest z acceleration values happened
     python3 "$SCRIPTPATH"/acceleration_selection.py -i $1 -b $2 -t $3 -o $4
+    msg "Analysis done"
 }
 
 sort_for_and_remove_time_column()
@@ -1244,6 +1245,7 @@ execute()
 
         ZMAXCOORDSGPXFILE=$(create_gpx_without_track_file $TIMESORTEDZCOORDSTMPFILE)
 
+        msg "Merge findings with gpx output file"
         if [ $MAXONLY == "YES" ]; then
             GPXPATHFILE=$(create_coords_only_gpx_file $COORDSFILE)
             # Merge path coordinates and max-Z accelerations gpx file (dont export actual z acceleration data)
