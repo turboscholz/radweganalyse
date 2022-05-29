@@ -32,8 +32,8 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
--t, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
-    --test            Apply an automatic regression test to check if all dependencies work as expected
+-w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
+-t, --test            Apply an automatic regression test to check if all dependencies work as expected
 EOF
   exit
 }
@@ -151,7 +151,7 @@ parse_params() {
       BAD_STREET_POSITIONS_ARG="${2-}"
       shift
       ;;
-    -t | --window)
+    -w | --window)
       TIME_WINDOW_ARG="${2-}"
       shift
       ;;
@@ -161,7 +161,7 @@ parse_params() {
       ;;
     --maxonly)
       MAXONLY=YES ;;
-    --test)
+    -t | --test)
       TEST=YES ;;
     -?*) die "Unknown option: $1" ;;
     *) break ;;
