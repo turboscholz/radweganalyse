@@ -206,7 +206,7 @@ setup_input_vars()
         elif [[ -f "$ACCELEROMETERFILE_WITHOUTG" ]]; then
             ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHOUTG"
         else
-            die "Please provide an Acceleration input file via -l option"
+            die "Please provide an Acceleration input file via -a option"
         fi
     elif [[ $TEST == "NO" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
         die "Acceleration input file \"$ACCELEROMETERFILE\" not found - aborting"
