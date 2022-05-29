@@ -10,8 +10,8 @@ generates a gpx file out of it in which the elevation values are actually
 the z acceleration values.
 
 Why is this information usefull? It can be used with a standard gpx viewer
-to see how the bike lane quality is and where problematic locations are
-"hidden" on the bike path.
+to see how good or bad the bike lane quality is and where problematic
+locations are "hidden" on the bike path.
 
 Dependencies: GMT's "sample1d", gpsbable, basic linux commands
               python3 for finding largest values, pandas python package
@@ -33,7 +33,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
--t, --test            Apply an automatic regression test to check if all dependencies work as expected
+-t, --test            Start a test session to check if all functions and dependencies work as expected
 EOF
   exit
 }
