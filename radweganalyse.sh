@@ -63,7 +63,6 @@ check_dependencies() {
   command -v gmt >&2 > /dev/null || command -v GMT >&2 > /dev/null || die "gmt binary not found. In Ubuntu, install with \"sudo apt-get install gmt\"."
   command -v gpsbabel >&2 > /dev/null || die "gpsbabel binary not found. In Ubuntu, install with \"sudo apt-get install gpsbabel\"."
   command -v awk      >&2 > /dev/null || die "awk binary not found. In Ubuntu, install with \"sudo apt-get install mawk\"."
-  command -v bc       >&2 > /dev/null || die "bc binary not found. In Ubuntu, install with \"sudo apt-get install bc\"."
   command -v sed      >&2 > /dev/null || die "sed binary not found"
 
   # Get the path of this script
@@ -1045,7 +1044,7 @@ export_time_lat_long_speed ()
         tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
 
         # Now search for the stop index
-        STOPTIME=$(echo $STARTTIME + $TIME_WINDOW | bc)
+        STOPTIME=$(echo | awk "{ print ($STARTTIME + $TIME_WINDOW)}")
         LINEINDEXBOTTOM=0
         OLDIFS=$IFS
         IFS=','
