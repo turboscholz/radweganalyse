@@ -18,12 +18,6 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 
 -h, --help            Print this help and exit
 -v, --verbose         Print script debug info
--f, --format          Input format of the csv data files
-                      0: Comma, decimal point (default)
-                      1: Tabulator, decimal point
-                      2: Semicolon, decimal point
-                      3: Tabulator, decimal comma
-                      4: Semicolon, decimal comma
 -o, --output          The output file name can be overridden, default is "xyz_data.gpx"
 -l, --locations       This is the input file of the phyphox experiment, default is "Location.csv"
 -a, --accelerations   This is the acceleration measurement file from phyphox
@@ -116,7 +110,7 @@ check_for_python3()
 
 parse_params() {
   # default values of variables set from params
-  FORMAT="0"
+  CSVFORMAT="0"
   OUTPUT_ARG="xyz_data.gpx"
   LOCATIONFILE="Location.csv"
   ACCELEROMETERFILE_WITHG="Accelerometer.csv"
@@ -131,10 +125,6 @@ parse_params() {
     case "${1-}" in
     -h | --help) usage ;;
     -v | --verbose) set -x ;;
-    -f | --format)
-      FORMAT="${2-}"
-      shift
-      ;;
     -o | --output)
       OUTPUT_ARG="${2-}"
       shift
@@ -933,6 +923,116 @@ EOF
     return 0
 }
 
+detect_format_comma_decimal_point_test()
+{
+    #0: Comma, decimal point
+    EXPECTEDCSVFORMAT=0
+    ACCLSFILETMP=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $ACCLSFILETMP
+"Time (s)","Acceleration x (m/s^2)","Acceleration y (m/s^2)","Acceleration z (m/s^2)"
+0.000000000E0,3.555450439E-1,3.094482422E-1,1.006282043E1
+EOF
+
+    FORMAT=$(detect_format $ACCLSFILETMP)
+    rm $ACCLSFILETMP
+    if [ $FORMAT -ne $EXPECTEDCSVFORMAT ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected: $EXPECTEDCSVFORMAT"
+        msg "got:      $FORMAT"
+        return 1
+    fi
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+detect_format_tabulator_decimal_point_test()
+{
+    #3: Tabulator, decimal comma
+    EXPECTEDCSVFORMAT=1
+    ACCLSFILETMP=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $ACCLSFILETMP
+"Time (s)"	"Acceleration x (m/s^2)"	"Acceleration y (m/s^2)"	"Acceleration z (m/s^2)"
+0.000000000E0	3.555450439E-1	3.094482422E-1	1.006282043E1
+EOF
+
+    FORMAT=$(detect_format $ACCLSFILETMP)
+    rm $ACCLSFILETMP
+    if [ $FORMAT -ne $EXPECTEDCSVFORMAT ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected: $EXPECTEDCSVFORMAT"
+        msg "got: $FORMAT"
+        return 1
+    fi
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+detect_format_semicolon_decimal_point_test()
+{
+    #2: Semicolon, decimal point
+    EXPECTEDCSVFORMAT=2
+    ACCLSFILETMP=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $ACCLSFILETMP
+"Time (s)";"Acceleration x (m/s^2)";"Acceleration y (m/s^2)";"Acceleration z (m/s^2)"
+0.000000000E0;3.555450439E-1;3.094482422E-1;1.006282043E1
+EOF
+
+    FORMAT=$(detect_format $ACCLSFILETMP)
+    rm $ACCLSFILETMP
+    if [ $FORMAT -ne $EXPECTEDCSVFORMAT ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected: $EXPECTEDCSVFORMAT"
+        msg "got: $FORMAT"
+        return 1
+    fi
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+detect_format_tabulator_decimal_comma_test()
+{
+    #1: Tabulator, decimal point
+    EXPECTEDCSVFORMAT=3
+    ACCLSFILETMP=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $ACCLSFILETMP
+"Time (s)"	"Acceleration x (m/s^2)"	"Acceleration y (m/s^2)"	"Acceleration z (m/s^2)"
+0,000000000E0	3,555450439E-1	3,094482422E-1	1,006282043E1
+EOF
+
+    FORMAT=$(detect_format $ACCLSFILETMP)
+    rm $ACCLSFILETMP
+    if [ $FORMAT -ne $EXPECTEDCSVFORMAT ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected: $EXPECTEDCSVFORMAT"
+        msg "got:      $FORMAT"
+        return 1
+    fi
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+detect_format_semicolon_decimal_comma_test()
+{
+    #4: Semicolon, decimal comma
+    EXPECTEDCSVFORMAT=4
+    ACCLSFILETMP=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $ACCLSFILETMP
+"Time (s)";"Acceleration x (m/s^2)";"Acceleration y (m/s^2)";"Acceleration z (m/s^2)"
+0,000000000E0;3,555450439E-1;3,094482422E-1;1,006282043E1
+EOF
+
+    FORMAT=$(detect_format $ACCLSFILETMP)
+    rm $ACCLSFILETMP
+    if [ $FORMAT -ne $EXPECTEDCSVFORMAT ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected: $EXPECTEDCSVFORMAT"
+        msg "got: $FORMAT"
+        return 1
+    fi
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
 do_regression_tests()
 {
     cat <<EOF > $ACCSTESTFILE
@@ -950,6 +1050,11 @@ EOF
 
     write_files_test
     remove_duplicates_test
+    detect_format_comma_decimal_point_test
+    detect_format_tabulator_decimal_point_test
+    detect_format_semicolon_decimal_point_test
+    detect_format_tabulator_decimal_comma_test
+    detect_format_semicolon_decimal_comma_test
     convert_data_test
     export_times_and_zaccs_in_file_test
     correct_zaccs_for_gvalue_test
@@ -996,7 +1101,7 @@ convert_data()
     3) sed 's/,/./g; s/\t/,/g' "$INPUT" > $TMPFILE ;;
     #Semicolon, decimal comma
     4) sed 's/,/./g; s/;/,/g' "$INPUT" > $TMPFILE ;;
-    *) die "Unknown format option: $FORMAT" ;;
+    *) die "Unknown input CSV data format" ;;
     esac
 
     echo "$TMPFILE"
@@ -1184,6 +1289,116 @@ correct_zaccs_for_gvalue()
     echo $OUTFILE
 }
 
+detect_format_comma_sep_decimal_point()
+{
+    FOUNDFORMAT=-1
+    set +e
+    COMMAFOUND=$(grep -c "\"Time (s)\"," "$GIVENFILE")
+    set -e
+    if [ $COMMAFOUND -gt 0 ]; then
+        # Find the number of dots in the second line; it should be 5 for the Acceleration file from phyphox
+        NUMBEROFDOTS=$(head -n 2 "$GIVENFILE" | tail -n 1 | tr -d -c '.' | wc -m)
+        if [ $NUMBEROFDOTS -eq 4 ]; then
+            FOUNDFORMAT=0
+        fi
+    fi
+    echo $FOUNDFORMAT
+}
+
+detect_format_tabulator_sep_decimal_point()
+{
+    FOUNDFORMAT=-1
+    set +e
+    TABFOUND=$(grep -cP '\t' "$GIVENFILE")
+    set -e
+    if [ $TABFOUND -gt 0 ]; then
+        # Find the number of dots in the second line; it should be 5 for the Acceleration file from phyphox
+        NUMBEROFDOTS=$(head -n 2 "$GIVENFILE" | tail -n 1 | tr -d -c '.' | wc -m)
+        if [ $NUMBEROFDOTS -eq 4 ]; then
+            FOUNDFORMAT=1
+        fi
+    fi
+    echo $FOUNDFORMAT
+}
+
+detect_format_semicolon_sep_decimal_point()
+{
+    FOUNDFORMAT=-1
+    set +e
+    SIMECOLONFOUND=$(grep -c "\"Time (s)\";" "$GIVENFILE")
+    set -e
+    if [ $SIMECOLONFOUND -gt 0 ]; then
+        # Find the number of dots in the second line; it should be 5 for the Acceleration file from phyphox
+        NUMBEROFDOTS=$(head -n 2 "$GIVENFILE" | tail -n 1 | tr -d -c '.' | wc -m)
+        if [ $NUMBEROFDOTS -eq 4 ]; then
+            FOUNDFORMAT=2
+        fi
+    fi
+    echo $FOUNDFORMAT
+}
+
+detect_format_tabulator_sep_decimal_comma()
+{
+    FOUNDFORMAT=-1
+    set +e
+    TABFOUND=$(grep -cP '\t' "$GIVENFILE")
+    set -e
+    if [ $TABFOUND -gt 0 ]; then
+        # Find the number of dots in the second line; it should be 5 for the Acceleration file from phyphox
+        NUMBEROFCOMMAS=$(head -n 2 "$GIVENFILE" | tail -n 1 | tr -d -c ',' | wc -m)
+        if [ $NUMBEROFCOMMAS -eq 4 ]; then
+            FOUNDFORMAT=3
+        fi
+    fi
+    echo $FOUNDFORMAT
+}
+
+detect_format_semicolon_sep_decimal_comma()
+{
+    FOUNDFORMAT=-1
+    set +e
+    SEMICOLONFOUND=$(grep -c "\"Time (s)\";" "$GIVENFILE")
+    set -e
+    if [ $SEMICOLONFOUND -gt 0 ]; then
+        # Find the number of dots in the second line; it should be 5 for the Acceleration file from phyphox
+        NUMBEROFCOMMAS=$(head -n 2 "$GIVENFILE" | tail -n 1 | tr -d -c ',' | wc -m)
+        if [ $NUMBEROFCOMMAS -eq 4 ]; then
+            FOUNDFORMAT=4
+        fi
+    fi
+    echo $FOUNDFORMAT
+}
+
+detect_format()
+{
+#   Return values are the following, depending on the input format of the csv data files
+#    0: Comma, decimal point
+#    1: Tabulator, decimal point
+#    2: Semicolon, decimal point
+#    3: Tabulator, decimal comma
+#    4: Semicolon, decimal comma
+    GIVENFILE="$1"
+    #0
+    FOUNDFORMAT=$(detect_format_comma_sep_decimal_point $GIVENFILE)
+    #1
+    if [ $FOUNDFORMAT -eq -1 ]; then
+        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_point $GIVENFILE)
+    fi
+    #2
+    if [ $FOUNDFORMAT -eq -1 ]; then
+        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_point $GIVENFILE)
+    fi
+    #3
+    if [ $FOUNDFORMAT -eq -1 ]; then
+        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_comma $GIVENFILE)
+    fi
+    #4
+    if [ $FOUNDFORMAT -eq -1 ]; then
+        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_comma $GIVENFILE)
+    fi
+    echo $FOUNDFORMAT
+}
+
 
 execute()
 {
@@ -1191,10 +1406,35 @@ execute()
     NODOUBLELINESACCELEROMETERFILE=$(remove_duplicates "$ACCELEROMETERFILE")
     msg "Remove duplicate coords"
     NODOUBLELINESLOCATIONFILE=$(remove_duplicates "$LOCATIONFILE")
+    msg "Detect format"
+    CSVFORMAT=$(detect_format $ACCELEROMETERFILE)
+    if [ $CSVFORMAT -lt 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}Error${NOFORMAT} - Format of input file could not be detected!"
+        msg "Valid CSV file formats (export formats in the phyphox app) are:"
+        msg "- Comma, decimal point"
+        msg "- Tabulator, decimal point"
+        msg "- Semicolon, decimal point"
+        msg "- Tabulator, decimal comma"
+        msg "- Semicolon, decimal comma"
+        msg "... stoping here."
+        die
+    fi
+    case "$CSVFORMAT" in
+        #Comma, decimal point, nothing to reformat
+        0) echo "Comma separator, decimal point found" ;;
+        #Tabulator, decimal point
+        1) echo "Tabulator separator, decimal point found" ;;
+        #Semicolon, decimal point
+        2) echo "Semicolon separator, decimal point found" ;;
+        #Tabulator, decimal comma
+        3) echo "Tabulator separator, decimal comma found" ;;
+        #Semicolon, decimal comma
+        4) echo "Semicolon separator, decimal comma found" ;;
+    esac
     msg "Format a_z"
-    FORMATEDACCELEROMETERFILE=$(convert_data "$FORMAT" "$NODOUBLELINESACCELEROMETERFILE")
+    FORMATEDACCELEROMETERFILE=$(convert_data "$CSVFORMAT" "$NODOUBLELINESACCELEROMETERFILE")
     msg "Format coords"
-    FORMATEDLOCATIONFILE=$(convert_data "$FORMAT" "$NODOUBLELINESLOCATIONFILE")
+    FORMATEDLOCATIONFILE=$(convert_data "$CSVFORMAT" "$NODOUBLELINESLOCATIONFILE")
     msg "Generate a_z's"
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
     msg "Generate coords"
