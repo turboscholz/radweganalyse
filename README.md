@@ -29,7 +29,6 @@ in the measured data.
 
 - sample1d: This tool is part of the Generic Mapping Tools (GMT) package. Install GMT with `sudo apt-get install gmt`
 - gpsbabel: This tool is a standalone program, also available in many linux distributions. Install with `sudo apt-get install gpsbabel`
-- bc: This is a command line calculator. Install with `sudo apt-get install bc`
 
 Other dependencies should be awailable on a standard Linux system.
 
