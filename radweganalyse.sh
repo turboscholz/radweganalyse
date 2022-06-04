@@ -1091,17 +1091,17 @@ convert_data()
     TMPFILE=$(mktemp /tmp/XXXXXX)
 
     case "$INPUTFMT" in
-    #Comma, decimal point, nothing to reformat
-    0) cp "$INPUT" $TMPFILE ;;
-    #Tabulator, decimal point
-    1) sed 's/\t/,/g' "$INPUT" > $TMPFILE ;;
-    #Semicolon, decimal point
-    2) sed 's/;/,/g' "$INPUT" > $TMPFILE ;;
-    #Tabulator, decimal comma
-    3) sed 's/,/./g; s/\t/,/g' "$INPUT" > $TMPFILE ;;
-    #Semicolon, decimal comma
-    4) sed 's/,/./g; s/;/,/g' "$INPUT" > $TMPFILE ;;
-    *) die "Unknown input CSV data format" ;;
+        #Comma, decimal point, nothing to reformat
+        0) cp "$INPUT" $TMPFILE ;;
+        #Tabulator, decimal point
+        1) sed 's/\t/,/g' "$INPUT" > $TMPFILE ;;
+        #Semicolon, decimal point
+        2) sed 's/;/,/g' "$INPUT" > $TMPFILE ;;
+        #Tabulator, decimal comma
+        3) sed 's/,/./g; s/\t/,/g' "$INPUT" > $TMPFILE ;;
+        #Semicolon, decimal comma
+        4) sed 's/,/./g; s/;/,/g' "$INPUT" > $TMPFILE ;;
+        *) die "Unknown input CSV data format" ;;
     esac
 
     echo "$TMPFILE"
