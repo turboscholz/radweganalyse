@@ -1379,22 +1379,22 @@ detect_format()
 #    4: Semicolon, decimal comma
     GIVENFILE="$1"
     #0
-    FOUNDFORMAT=$(detect_format_comma_sep_decimal_point $GIVENFILE)
+    FOUNDFORMAT=$(detect_format_comma_sep_decimal_point "$GIVENFILE")
     #1
     if [ $FOUNDFORMAT -eq -1 ]; then
-        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_point $GIVENFILE)
+        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_point "$GIVENFILE")
     fi
     #2
     if [ $FOUNDFORMAT -eq -1 ]; then
-        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_point $GIVENFILE)
+        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_point "$GIVENFILE")
     fi
     #3
     if [ $FOUNDFORMAT -eq -1 ]; then
-        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_comma $GIVENFILE)
+        FOUNDFORMAT=$(detect_format_tabulator_sep_decimal_comma "$GIVENFILE")
     fi
     #4
     if [ $FOUNDFORMAT -eq -1 ]; then
-        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_comma $GIVENFILE)
+        FOUNDFORMAT=$(detect_format_semicolon_sep_decimal_comma "$GIVENFILE")
     fi
     echo $FOUNDFORMAT
 }
@@ -1407,7 +1407,7 @@ execute()
     msg "Remove duplicate coords"
     NODOUBLELINESLOCATIONFILE=$(remove_duplicates "$LOCATIONFILE")
     msg "Detect format"
-    CSVFORMAT=$(detect_format $ACCELEROMETERFILE)
+    CSVFORMAT=$(detect_format "$ACCELEROMETERFILE")
     if [ $CSVFORMAT -lt 0 ]; then
         msg "${FUNCNAME[0]}: ${RED}Error${NOFORMAT} - Format of input file could not be detected!"
         msg "Valid CSV file formats (export formats in the phyphox app) are:"
