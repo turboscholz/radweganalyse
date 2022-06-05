@@ -26,6 +26,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
+-f, --offset          The time offset in seconds after start when the analysis should end, default 0 (i.e. no time offset)
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
 -t, --test            Start a test session to check if all functions and dependencies work as expected
 EOF
@@ -117,9 +118,11 @@ parse_params() {
   ACCELEROMETERFILE_WITHOUTG="Linear Acceleration.csv"
   BAD_STREET_POSITIONS_ARG="5"
   TIME_WINDOW_ARG="2"
+  OFFSET_ARG="2"
   MAXONLY=NO
   TEST=NO
   START=0
+  OFFSET=0
 
   while :; do
     case "${1-}" in
@@ -147,6 +150,10 @@ parse_params() {
       ;;
     -s | --start)
       START_ARG="${2-}"
+      shift
+      ;;
+    -f | --offset)
+      OFFSET_ARG="${2-}"
       shift
       ;;
     --maxonly)
@@ -185,6 +192,9 @@ setup_input_vars()
     fi
     if [ "${START_ARG}" != "" ]; then
         START="${START_ARG}"
+    fi
+    if [ "${OFFSET_ARG}" != "" ]; then
+        OFFSET="${OFFSET_ARG}"
     fi
 
     # Detect which acceleration file is available, set GVALUE accordingly
@@ -463,7 +473,7 @@ export_time_lat_long_speed_test()
 5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
-    COORDS=$(export_time_lat_long_speed 0 "$TMPINPUTFILE")
+    COORDS=$(export_time_lat_long_speed 0 0 "$TMPINPUTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
@@ -501,7 +511,7 @@ export_time_lat_long_speed_with_starttime_test()
 5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
-    COORDS=$(export_time_lat_long_speed 0.7 "$TMPINPUTFILE")
+    COORDS=$(export_time_lat_long_speed 0.7 0 "$TMPINPUTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
@@ -528,11 +538,12 @@ EOF
     return 0
 }
 
-export_time_lat_long_speed_with_starttime_test_time_window_test()
+export_time_lat_long_speed_with_offset_test()
 {
-    # When using --start, the function export_time_lat_long_speed() should
-    # use the timewindow for setting the upper limit of the time in the location input.
+    # When OFFSET is not 0, the function export_time_lat_long_speed() should
+    # use the offset parameter for setting the upper limit of the time in the location input.
     # This test will test the behaviour.
+    OFFSET=1
     TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $TMPINPUTFILE
 "Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
@@ -543,13 +554,12 @@ export_time_lat_long_speed_with_starttime_test_time_window_test()
 2.000000000E0,7.000000000E1,8.000000000E0,1.200000000E2,4.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 3.000000000E0,8.000000000E1,9.000000000E0,1.200000000E2,5.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
-    COORDS=$(export_time_lat_long_speed 0.5 "$TMPINPUTFILE")
+    COORDS=$(export_time_lat_long_speed 0.5 1 "$TMPINPUTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
 5.000000000E-1,4.500000000E1,5.500000000E0,1.500000000E0
 1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
 1.500000000E0,6.000000000E1,7.000000000E0,3.000000000E0
-2.000000000E0,7.000000000E1,8.000000000E0,4.000000000E0
 EOF
     set +e
     cmp --silent $EXPECTED_FILE $COORDS
@@ -766,7 +776,7 @@ EOF
 
 create_coords_only_gpx_file_test()
 {
-    COORDS=$(export_time_lat_long_speed 0 "$COORDSTESTFILE")
+    COORDS=$(export_time_lat_long_speed 0 0 "$COORDSTESTFILE")
     GPXFILE=$(create_coords_only_gpx_file $COORDS)
     sed -i -e 3d $GPXFILE #We need this hack to remove the current timestamp in the third line
     sed -i $GPXFILE -re '1,2d' #Remove lines 1 and 2 in the Output-GPX file (this is just a header)
@@ -1060,7 +1070,7 @@ EOF
     correct_zaccs_for_gvalue_test
     export_time_lat_long_speed_test
     export_time_lat_long_speed_with_starttime_test
-    export_time_lat_long_speed_with_starttime_test_time_window_test
+    export_time_lat_long_speed_with_offset_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_with_track_file_test
@@ -1120,8 +1130,9 @@ export_times_and_zaccs_in_file()
 # Leave time, latitude, longitue, speed
 export_time_lat_long_speed ()
 {
-    STARTTIME=$1
-    INPUT="$2"
+    STARTTIME="$1"
+    OFFSET_SEC="$2"
+    INPUT="$3"
     TMPFILE=$(mktemp /tmp/XXXXXX)
     if [ "$STARTTIME" == "0" ]; then
         cut "$INPUT" -d, -f1-3,5 > $TMPFILE
@@ -1130,7 +1141,7 @@ export_time_lat_long_speed ()
         # Find Start and set the output file accordingly
         INPUTTMPCPY_FILE=$(mktemp /tmp/XXXXXX)
         cp "$INPUT" "$INPUTTMPCPY_FILE"
-        sed -i '1d;' $INPUTTMPCPY_FILE
+        sed -i '1d;' "$INPUTTMPCPY_FILE"
         TOTALLINES=$(wc -l $INPUTTMPCPY_FILE | cut -d\  -f 1)
         LINEINDEXTOP=0
         OLDIFS=$IFS
@@ -1149,29 +1160,33 @@ export_time_lat_long_speed ()
         tail -n $REMAININGLINES $INPUTTMPCPY_FILE > $INPUTTMPCPY2_FILE
 
         # Now search for the stop index
-        STOPTIME=$(echo | awk "{ print ($STARTTIME + $TIME_WINDOW)}")
-        LINEINDEXBOTTOM=0
-        OLDIFS=$IFS
-        IFS=','
-        while read TIME REST
-        do
-            compare=$(echo | awk "{ print ($TIME > $STOPTIME) ? 1 : 0 }")
-            if [ $compare -eq 1 ]; then
-                break
-            fi
-            LINEINDEXBOTTOM=$(expr $LINEINDEXBOTTOM + 1)
-        done < $INPUTTMPCPY2_FILE
-        IFS=$OLDIFS
         INPUTTMPCPY3_FILE=$(mktemp /tmp/XXXXXX)
-        head -n $LINEINDEXBOTTOM $INPUTTMPCPY2_FILE > $INPUTTMPCPY3_FILE
+        if [ $OFFSET_SEC -eq 0 ]; then
+            cp $INPUTTMPCPY2_FILE $INPUTTMPCPY3_FILE
+        else
+            STOPTIME=$(echo | awk "{ print ($STARTTIME + $OFFSET_SEC)}")
+            LINEINDEXBOTTOM=0
+            OLDIFS=$IFS
+            IFS=','
+            while read TIME REST
+            do
+                compare=$(echo | awk "{ print ($TIME > $STOPTIME) ? 1 : 0 }")
+                if [ $compare -eq 1 ]; then
+                    break
+                fi
+                LINEINDEXBOTTOM=$(expr $LINEINDEXBOTTOM + 1)
+            done < $INPUTTMPCPY2_FILE
+            IFS=$OLDIFS
+            head -n $LINEINDEXBOTTOM $INPUTTMPCPY2_FILE > $INPUTTMPCPY3_FILE
+        fi
 
         cut $INPUTTMPCPY3_FILE -d, -f1-3,5 > $TMPFILE
         rm $INPUTTMPCPY_FILE
         rm $INPUTTMPCPY2_FILE
         rm $INPUTTMPCPY3_FILE
 
-        if [[ $LINEINDEXTOP -ge $TOTALLINES ]] || [[ $LINEINDEXBOTTOM -eq 0 ]]; then
-            die "Too less data points available. Choose another start time or time window!"
+        if [[ $OFFSET_SEC -ne 0 ]] && ([[ $LINEINDEXTOP -ge $TOTALLINES ]] || [[ $LINEINDEXBOTTOM -eq 0 ]]); then
+            die "Too less data points available. Choose another start time or offset!"
         fi
     fi
     echo "$TMPFILE"
@@ -1440,7 +1455,7 @@ execute()
     msg "Extract a_z's"
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
     msg "Extract coords"
-    COORDSFILE=$(export_time_lat_long_speed $START "$FORMATEDLOCATIONFILE")
+    COORDSFILE=$(export_time_lat_long_speed $START $OFFSET "$FORMATEDLOCATIONFILE")
 
     msg "Resample coords"
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
