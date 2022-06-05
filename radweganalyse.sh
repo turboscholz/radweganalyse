@@ -1417,6 +1417,8 @@ execute()
         msg "- Tabulator, decimal comma"
         msg "- Semicolon, decimal comma"
         msg "... stoping here."
+        rm "$NODOUBLELINESACCELEROMETERFILE"
+        rm "$NODOUBLELINESLOCATIONFILE"
         die
     fi
     case "$CSVFORMAT" in
@@ -1444,13 +1446,13 @@ execute()
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
     if [ $(wc -l "$COORDS_RESAMPLED_FILE" | cut -d ' ' -f 1) -lt 2 ]; then
         msg "${RED}Error${NOFORMAT}: Not enough coordinates found for the given time frame. Stopping here."
-        rm $COORDSFILE
-        rm $NODOUBLELINESACCELEROMETERFILE
-        rm $NODOUBLELINESLOCATIONFILE
-        rm $FORMATEDACCELEROMETERFILE
-        rm $FORMATEDLOCATIONFILE
-        rm $ZACCLSFILE
-        rm $COORDS_RESAMPLED_FILE
+        rm "$COORDSFILE"
+        rm "$NODOUBLELINESACCELEROMETERFILE"
+        rm "$NODOUBLELINESLOCATIONFILE"
+        rm "$FORMATEDACCELEROMETERFILE"
+        rm "$FORMATEDLOCATIONFILE"
+        rm "$ZACCLSFILE"
+        rm "$COORDS_RESAMPLED_FILE"
         die;
     fi
 
@@ -1458,14 +1460,14 @@ execute()
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
     if [ $(wc -l "$ZACCLS_RESAMPLED_FILE" | cut -d ' ' -f 1) -lt 2 ]; then
         msg "${RED}Error${NOFORMAT}: Not enough acceleration files found for the given time frame. Stopping here."
-        rm $COORDSFILE
-        rm $NODOUBLELINESACCELEROMETERFILE
-        rm $NODOUBLELINESLOCATIONFILE
-        rm $FORMATEDACCELEROMETERFILE
-        rm $FORMATEDLOCATIONFILE
-        rm $ZACCLSFILE
-        rm $COORDS_RESAMPLED_FILE
-        rm $ZACCLS_RESAMPLED_FILE
+        rm "$COORDSFILE"
+        rm "$NODOUBLELINESACCELEROMETERFILE"
+        rm "$NODOUBLELINESLOCATIONFILE"
+        rm "$FORMATEDACCELEROMETERFILE"
+        rm "$FORMATEDLOCATIONFILE"
+        rm "$ZACCLSFILE"
+        rm "$COORDS_RESAMPLED_FILE"
+        rm "$ZACCLS_RESAMPLED_FILE"
         die;
     fi
 
