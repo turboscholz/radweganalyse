@@ -1431,18 +1431,43 @@ execute()
         #Semicolon, decimal comma
         4) echo "Semicolon separator, decimal comma found" ;;
     esac
-    msg "Format a_z"
+    msg "Format a_z's"
     FORMATEDACCELEROMETERFILE=$(convert_data "$CSVFORMAT" "$NODOUBLELINESACCELEROMETERFILE")
     msg "Format coords"
     FORMATEDLOCATIONFILE=$(convert_data "$CSVFORMAT" "$NODOUBLELINESLOCATIONFILE")
-    msg "Generate a_z's"
+    msg "Extract a_z's"
     ZACCLSFILE=$(export_times_and_zaccs_in_file "$FORMATEDACCELEROMETERFILE")
-    msg "Generate coords"
+    msg "Extract coords"
     COORDSFILE=$(export_time_lat_long_speed $START "$FORMATEDLOCATIONFILE")
+
     msg "Resample coords"
     COORDS_RESAMPLED_FILE=$(generate_resampled_coords_file $COORDSFILE $ZACCLSFILE)
+    if [ $(wc -l "$COORDS_RESAMPLED_FILE" | cut -d ' ' -f 1) -lt 2 ]; then
+        msg "${RED}Error${NOFORMAT}: Not enough coordinates found for the given time frame. Stopping here."
+        rm $COORDSFILE
+        rm $NODOUBLELINESACCELEROMETERFILE
+        rm $NODOUBLELINESLOCATIONFILE
+        rm $FORMATEDACCELEROMETERFILE
+        rm $FORMATEDLOCATIONFILE
+        rm $ZACCLSFILE
+        rm $COORDS_RESAMPLED_FILE
+        die;
+    fi
+
     msg "Resample a_z's"
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
+    if [ $(wc -l "$ZACCLS_RESAMPLED_FILE" | cut -d ' ' -f 1) -lt 2 ]; then
+        msg "${RED}Error${NOFORMAT}: Not enough acceleration files found for the given time frame. Stopping here."
+        rm $COORDSFILE
+        rm $NODOUBLELINESACCELEROMETERFILE
+        rm $NODOUBLELINESLOCATIONFILE
+        rm $FORMATEDACCELEROMETERFILE
+        rm $FORMATEDLOCATIONFILE
+        rm $ZACCLSFILE
+        rm $COORDS_RESAMPLED_FILE
+        rm $ZACCLS_RESAMPLED_FILE
+        die;
+    fi
 
     #Correct the measured acceleration values for the g-value (time consuming!)
     if [[ "$GVALUE" != "0.0" ]]; then
