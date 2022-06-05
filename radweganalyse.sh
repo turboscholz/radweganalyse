@@ -1459,7 +1459,7 @@ execute()
     msg "Resample a_z's"
     ZACCLS_RESAMPLED_FILE=$(generate_resampled_coords_file $ZACCLSFILE $COORDS_RESAMPLED_FILE)
     if [ $(wc -l "$ZACCLS_RESAMPLED_FILE" | cut -d ' ' -f 1) -lt 2 ]; then
-        msg "${RED}Error${NOFORMAT}: Not enough acceleration files found for the given time frame. Stopping here."
+        msg "${RED}Error${NOFORMAT}: Not enough acceleration values found for the given time frame. Stopping here."
         rm "$COORDSFILE"
         rm "$NODOUBLELINESACCELEROMETERFILE"
         rm "$NODOUBLELINESLOCATIONFILE"
