@@ -20,9 +20,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -v, --verbose         Print script debug info
 -o, --output          The output file name can be overridden, default is "xyz_data.gpx"
 -l, --locations       This is the input file of the phyphox experiment, default is "Location.csv"
--a, --accelerations   This is the acceleration measurement file from phyphox
-                      where the gravitational acceleration is not taken into account, default "Accelerometer.csv"
-                      This file does not need to be existing if the file "Linear Acceleration.csv" is available.
+-a, --accelerations   This is the acceleration measurement file from phyphox, default "Accelerometer.csv" or "Linear Acceleration.csv"
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
