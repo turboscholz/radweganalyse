@@ -564,6 +564,52 @@ export_time_lat_long_speed_with_offset_test()
 2.000000000E0,7.000000000E1,8.000000000E0,1.200000000E2,4.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 3.000000000E0,8.000000000E1,9.000000000E0,1.200000000E2,5.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
 EOF
+    COORDS=$(export_time_lat_long_speed 0 1.5 "$TMPINPUTFILE")
+    EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $EXPECTED_FILE
+0.000000000E0,4.000000000E1,5.000000000E0,1.000000000E0
+5.000000000E-1,4.500000000E1,5.500000000E0,1.500000000E0
+1.000000000E0,5.000000000E1,6.000000000E0,2.000000000E0
+1.500000000E0,6.000000000E1,7.000000000E0,3.000000000E0
+EOF
+    set +e
+    cmp --silent $EXPECTED_FILE $COORDS
+    retval=$?
+    set -e
+    if [ $retval -ne 0 ]; then
+        msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
+        msg "expected:"
+        cat $EXPECTED_FILE
+        msg "got:"
+        cat $COORDS
+        rm $COORDS
+        rm $EXPECTED_FILE
+        rm $TMPINPUTFILE
+        return 1
+    fi
+    rm $COORDS
+    rm $EXPECTED_FILE
+    rm $TMPINPUTFILE
+    msg "${FUNCNAME[0]}: ${GREEN}passed${NOFORMAT}"
+    return 0
+}
+
+export_time_lat_long_speed_with_start_and_offset_test()
+{
+    # When START and OFFSET are not 0, the function export_time_lat_long_speed() should
+    # use both parameters for setting the limits of the time in the location input.
+    # This test will test the behaviour.
+    OFFSET=1
+    TMPINPUTFILE=$(mktemp /tmp/XXXXXX)
+    cat <<EOF > $TMPINPUTFILE
+"Time (s)","Latitude (°)","Longitude (°)","Height (m)","Velocity (m/s)","Direction (°)","Horizontal Accuracy (m)","Vertical Accuracy (m)"
+0.000000000E0,4.000000000E1,5.000000000E0,1.200000000E2,1.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+5.000000000E-1,4.500000000E1,5.500000000E0,1.200000000E2,1.500000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+1.000000000E0,5.000000000E1,6.000000000E0,1.200000000E2,2.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+1.500000000E0,6.000000000E1,7.000000000E0,1.200000000E2,3.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+2.000000000E0,7.000000000E1,8.000000000E0,1.200000000E2,4.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+3.000000000E0,8.000000000E1,9.000000000E0,1.200000000E2,5.000000000E0,0.000000000E0,1.000000000E1,1.000000000E1
+EOF
     COORDS=$(export_time_lat_long_speed 0.5 1 "$TMPINPUTFILE")
     EXPECTED_FILE=$(mktemp /tmp/XXXXXX)
     cat <<EOF > $EXPECTED_FILE
@@ -1081,6 +1127,7 @@ EOF
     export_time_lat_long_speed_test
     export_time_lat_long_speed_with_starttime_test
     export_time_lat_long_speed_with_offset_test
+    export_time_lat_long_speed_with_start_and_offset_test
     generate_resampled_coords_file_test
     merge_coords_and_zacc_file_test
     create_gpx_with_track_file_test
