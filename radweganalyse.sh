@@ -1144,7 +1144,7 @@ export_time_lat_long_speed ()
     OFFSET_SEC="$2"
     INPUT="$3"
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    if [ "$STARTTIME" == "0" ]; then
+    if [ "$STARTTIME" == "0" ] && [ "$OFFSET" == "0" ]; then
         cut "$INPUT" -d, -f1-3,5 > $TMPFILE
         sed -i '1d;' $TMPFILE
     else
