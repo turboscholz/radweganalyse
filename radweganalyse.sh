@@ -23,6 +23,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -a, --accelerations   This is the acceleration measurement file from phyphox, default "Accelerometer.csv" or "Linear Acceleration.csv"
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
+    --no-analysis     No analysis of the data via python script, only create a gpx file. Cannot be set with "maxonly" at the same time.
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
 -f, --offset          The time offset in seconds after start when the analysis should end, default 0 (i.e. no time offset)
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
@@ -118,6 +119,7 @@ parse_params() {
   TIME_WINDOW_ARG="2"
   OFFSET_ARG="2"
   MAXONLY=NO
+  ANALYSIS=YES
   TEST=NO
   START=0
   OFFSET=0
@@ -156,6 +158,8 @@ parse_params() {
       ;;
     --maxonly)
       MAXONLY=YES ;;
+    --no-analysis)
+      ANALYSIS=NO ;;
     -t | --test)
       TEST=YES ;;
     -?*) die "Unknown option: $1" ;;
@@ -169,6 +173,14 @@ parse_params() {
   return 0
 }
 
+validate_input()
+{
+    # Assign values of script arguments
+    if [[ "$ANALYSIS" == "NO" ]] && [[ "$MAXONLY" == "YES" ]]; then
+        msg "${RED}Error:${NOFORMAT} --maxonly and --no-analysis cannot be set at the same time."
+        die
+    fi
+}
 
 setup_input_vars()
 {
@@ -1509,7 +1521,7 @@ execute()
     msg "Create gpx output file"
     GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
-    if [[ "$ISPYTHON3HERE" == "yes" ]] && [[ $MAXZCALCSCRIPTFOUND -eq 1 ]]; then
+    if [[ "$ANALYSIS" == "YES" ]] && [[ "$ISPYTHON3HERE" == "yes" ]] && [[ $MAXZCALCSCRIPTFOUND -eq 1 ]]; then
         msg "Find maximum positions"
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
@@ -1566,6 +1578,7 @@ main()
     check_dependencies
     set_gmt_binary
     parse_params "$@"
+    validate_input
     setup_input_vars
     setup_test_vars
     check_for_python3
