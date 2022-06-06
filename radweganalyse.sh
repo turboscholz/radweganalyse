@@ -63,10 +63,10 @@ check_dependencies() {
   SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
   # Find the gps coordinates where the highest z acceleration values happened
-  MAXZCALCSCRIPTFOUND=1
+  MAXZCALCSCRIPTFOUND="YES"
   if [ ! -f "$SCRIPTPATH"/acceleration_selection.py ]; then
     msg "${RED}acceleration_selection.py not found, max z positions cannot be calulated${NOFORMAT}"
-    MAXZCALCSCRIPTFOUND=0
+    MAXZCALCSCRIPTFOUND="NO"
   fi
 }
 
@@ -97,13 +97,13 @@ setup_test_vars()
 
 check_for_python3()
 {
-    ISPYTHON3HERE="yes"
+    ISPYTHON3HERE="YES"
     set +e
     command -v python3 2>&1 >> /dev/null
     retval=$?
     set -e
     if [ $retval -ne 0 ]; then
-        ISPYTHON3HERE="no"
+        ISPYTHON3HERE="NO"
         msg "${YELLOW}Warning:${NOFORMAT} python3 not found - no data analysis possible. In Ubuntu, install with \"sudo apt-get install python\"."
     fi
 }
@@ -826,10 +826,10 @@ EOF
 
 analyze_data_via_script_test()
 {
-    if [[ "$ISPYTHON3HERE" == "no" ]]; then
+    if [[ "$ISPYTHON3HERE" == "NO" ]]; then
         return 0
     fi
-    if [ $MAXZCALCSCRIPTFOUND -eq 0 ]; then
+    if [ $MAXZCALCSCRIPTFOUND == "NO" ]; then
         msg "${FUNCNAME[0]}: ${YELLOW}ignored${NOFORMAT} - External analysis script not found"
         return 0
     fi
@@ -1521,7 +1521,7 @@ execute()
     msg "Create gpx output file"
     GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
-    if [[ "$ANALYSIS" == "YES" ]] && [[ "$ISPYTHON3HERE" == "yes" ]] && [[ $MAXZCALCSCRIPTFOUND -eq 1 ]]; then
+    if [[ "$ANALYSIS" == "YES" ]] && [[ "$ISPYTHON3HERE" == "YES" ]] && [[ "$MAXZCALCSCRIPTFOUND" == "YES" ]]; then
         msg "Find maximum positions"
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
