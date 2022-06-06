@@ -75,10 +75,10 @@ check_dependencies() {
 set_gmt_binary()
 {
     GMTVERSION=""
-    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -eq 5 ]]; then
+    if [ "$(command -v gmt 2>&1)" != "" ] && [ "$(gmt --version | cut -d. -f 1 )" -eq 5 ]; then
         GMTVERSION="5"
     fi
-    if [[ "$(command -v gmt 2>&1)" != "" ]] && [[ "$(gmt --version | cut -d. -f 1 )" -ge 6 ]]; then
+    if [ "$(command -v gmt 2>&1)" != "" ] && [ "$(gmt --version | cut -d. -f 1 )" -ge 6 ]; then
         GMTVERSION="6"
     fi
     if [ "$GMTVERSION" == "" ]; then
@@ -176,7 +176,7 @@ parse_params() {
 validate_input()
 {
     # Assign values of script arguments
-    if [[ "$ANALYSIS" == "NO" ]] && [[ "$MAXONLY" == "YES" ]]; then
+    if [ "$ANALYSIS" == "NO" ] && [ "$MAXONLY" == "YES" ]; then
         msg "${RED}Error:${NOFORMAT} --maxonly and --no-analysis cannot be set at the same time."
         die
     fi
@@ -209,16 +209,16 @@ setup_input_vars()
 
     # Detect which acceleration file is available, set GVALUE accordingly
     GVALUE="0.0"
-    if [[ $TEST == "NO" ]] && [[ "${ACCELEROMETERFILE}" == "" ]] ; then
-        if [[ -f "$ACCELEROMETERFILE_WITHG" ]]; then
+    if [ "$TEST" == "NO" ] && [ "$ACCELEROMETERFILE" == "" ] ; then
+        if [ -f "$ACCELEROMETERFILE_WITHG" ]; then
             ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHG"
             GVALUE="9.81"
-        elif [[ -f "$ACCELEROMETERFILE_WITHOUTG" ]]; then
+        elif [ -f "$ACCELEROMETERFILE_WITHOUTG" ]; then
             ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHOUTG"
         else
             die "Please provide an Acceleration input file via -a option"
         fi
-    elif [[ $TEST == "NO" ]] && [[ ! -f "$ACCELEROMETERFILE" ]]; then
+    elif [ "$TEST" == "NO" ] && [ ! -f "$ACCELEROMETERFILE" ]; then
         die "Acceleration input file \"$ACCELEROMETERFILE\" not found - aborting"
     fi
 }
@@ -258,7 +258,7 @@ output_actual_vs_expected()
 write_files_test()
 {
     lines=$(wc -l $ACCSTESTFILE | cut -d " " -f 1)
-    if [[ $lines -ne 4 ]]; then
+    if [ $lines -ne 4 ]; then
         msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
         msg "Lines of accelerations file ${ACCSTESTFILE}:"
         output_actual_vs_expected $lines 4
@@ -266,7 +266,7 @@ write_files_test()
     fi
 
     lines=$(wc -l $COORDSTESTFILE | cut -d " " -f 1)
-    if [[ $lines -ne 3 ]]; then
+    if [ $lines -ne 3 ]; then
         msg "${FUNCNAME[0]}: ${RED}failed${NOFORMAT}"
         msg "Lines of coordinations file ${COORDSTESTFILE}:"
         output_actual_vs_expected $lines 3
@@ -826,7 +826,7 @@ EOF
 
 analyze_data_via_script_test()
 {
-    if [[ "$ISPYTHON3HERE" == "NO" ]]; then
+    if [ "$ISPYTHON3HERE" == "NO" ]; then
         return 0
     fi
     if [ $MAXZCALCSCRIPTFOUND == "NO" ]; then
@@ -1195,7 +1195,7 @@ export_time_lat_long_speed ()
         rm $INPUTTMPCPY2_FILE
         rm $INPUTTMPCPY3_FILE
 
-        if [[ $OFFSET_SEC -ne 0 ]] && ([[ $LINEINDEXTOP -ge $TOTALLINES ]] || [[ $LINEINDEXBOTTOM -eq 0 ]]); then
+        if [ $OFFSET_SEC -ne 0 ] && ([ $LINEINDEXTOP -ge $TOTALLINES ] || [ $LINEINDEXBOTTOM -eq 0 ]); then
             die "Too less data points available. Choose another start time or offset!"
         fi
     fi
@@ -1497,7 +1497,7 @@ execute()
     fi
 
     #Correct the measured acceleration values for the g-value (time consuming!)
-    if [[ "$GVALUE" != "0.0" ]]; then
+    if [ "$GVALUE" != "0.0" ]; then
         msg "Correct for g"
         TMPFILE=$(mktemp /tmp/XXXXXX)
         mv $ZACCLS_RESAMPLED_FILE $TMPFILE
@@ -1521,7 +1521,7 @@ execute()
     msg "Create gpx output file"
     GPXPATHANDZACCFILE=$(create_gpx_with_track_file $COORDSANDACCSFILE)
 
-    if [[ "$ANALYSIS" == "YES" ]] && [[ "$ISPYTHON3HERE" == "YES" ]] && [[ "$MAXZCALCSCRIPTFOUND" == "YES" ]]; then
+    if [ "$ANALYSIS" = "YES" ] && [ "$ISPYTHON3HERE" = "YES" ] && [ "$MAXZCALCSCRIPTFOUND" = "YES" ]; then
         msg "Find maximum positions"
         # Include header - this file will be used below to analyze the data
         TIMECOORDSZACCSFILE=$(mktemp /tmp/XXXXXX)
