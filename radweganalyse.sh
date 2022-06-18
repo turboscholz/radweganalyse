@@ -28,6 +28,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -f, --offset          The time offset in seconds after start when the analysis should end, default 0 (i.e. no time offset)
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
 -t, --test            Start a test session to check if all functions and dependencies work as expected
+-c, --csv             If given, the coordinates, the current speed and the acceleration are exported as a csv file.
 EOF
   exit
 }
@@ -156,6 +157,8 @@ parse_params() {
       OFFSET_ARG="${2-}"
       shift
       ;;
+    -c | --csv)
+      CSVOUT=YES ;;
     --maxonly)
       MAXONLY=YES ;;
     --no-analysis)
@@ -1605,7 +1608,6 @@ execute()
     fi
 
     rm $COORDSFILE
-    rm $COORDSANDACCSFILE
     rm $NODOUBLELINESACCELEROMETERFILE
     rm $NODOUBLELINESLOCATIONFILE
     rm $FORMATEDACCELEROMETERFILE
@@ -1614,6 +1616,14 @@ execute()
     rm $ZACCLS_RESAMPLED_FILE
     rm $COORDS_RESAMPLED_FILE
     rm $MERGEDMEASUREDATAFILE
+
+    if [ "$CSVOUT" == "YES" ]; then
+        CSVOUTFILENAME="$(basename -s .gpx "$OUTPUTFILENAME").csv"
+        mv $COORDSANDACCSFILE "$CSVOUTFILENAME"
+        msg "${GREEN}Done${NOFORMAT}: $CSVOUTFILENAME"
+    else
+        rm $COORDSANDACCSFILE
+    fi
 
     msg "${GREEN}Done${NOFORMAT}: $OUTPUTFILENAME"
 }
