@@ -1221,7 +1221,7 @@ export_time_lat_long_speed ()
 
         # Now search for the stop index
         INPUTTMPCPY3_FILE=$(mktemp /tmp/XXXXXX)
-        if [ $OFFSET_SEC -eq 0 ]; then
+        if [ $OFFSET_SEC == "0" ]; then
             cp $INPUTTMPCPY2_FILE $INPUTTMPCPY3_FILE
         else
             STOPTIME=$(echo | awk "{ print ($STARTTIME + $OFFSET_SEC)}")
@@ -1245,7 +1245,7 @@ export_time_lat_long_speed ()
         rm $INPUTTMPCPY2_FILE
         rm $INPUTTMPCPY3_FILE
 
-        if [ $OFFSET_SEC -ne 0 ] && ([ $LINEINDEXTOP -ge $TOTALLINES ] || [ $LINEINDEXBOTTOM -eq 0 ]); then
+        if [ $OFFSET_SEC != "0" ] && ([ $LINEINDEXTOP -ge $TOTALLINES ] || [ $LINEINDEXBOTTOM -eq 0 ]); then
             die "Too less data points available. Choose another start time or offset!"
         fi
     fi
