@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 trap cleanup SIGINT SIGTERM ERR EXIT
 
@@ -80,7 +80,7 @@ set_gmt_binary()
         GMTVERSION="5"
     fi
     if [ "$(command -v gmt 2>&1)" != "" ] && [ "$(gmt --version | cut -d. -f 1 )" -ge 6 ]; then
-        GMTVERSION="6"
+        GMTVERSION="$(gmt --version | cut -d. -f 1 )"."$(gmt --version | cut -d. -f 2 )" # get versionnumber as #.#
     fi
     if [ "$GMTVERSION" == "" ]; then
         GMTVERSION="$(GMT --version 2>&1 | head -1 | sed 's/GMT Version //g' | cut -d. -f 1)"
@@ -88,6 +88,7 @@ set_gmt_binary()
     if [ "$GMTVERSION" == "" ]; then
         die "Unknown gmt version installed!"
     fi
+    GMTVERSION=$(echo | awk "{ print $GMTVERSION*10  }")
 }
 
 setup_test_vars()
@@ -1254,19 +1255,26 @@ export_time_lat_long_speed ()
 
 generate_resampled_coords_file(){
     TMPFILE=$(mktemp /tmp/XXXXXX)
-    if [ "$GMTVERSION" -eq 4 ]; then
+    if [ "$GMTVERSION" -eq 40 ]; then
         set +e
         GMT sample1d $1 -N$2 -V > $TMPFILE
         retval=$?
         set -e
-    elif [ "$GMTVERSION" -eq 5 ]; then
+    elif [ "$GMTVERSION" -eq 50 ]; then
         set +e
         gmt sample1d $1 -N$2 -sa -V > $TMPFILE
         retval=$?
         set -e
-    else
+    elif [ "$GMTVERSION" -lt 63 ]; then
         set +e
+        # changed command: -T
         gmt sample1d $1 -T$2 -sa -V > $TMPFILE
+        retval=$?
+        set -e
+    elif [ "$GMTVERSION" -ge 63 ]; then
+        set +e
+        # changed command: -s+a
+        gmt sample1d $1 -T$2 -s+a -V > $TMPFILE
         retval=$?
         set -e
     fi
