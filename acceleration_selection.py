@@ -90,9 +90,7 @@ def fkt_select(input_csv, numrow, timevariation):
                     writerow = False
                     break
             if writerow == True:
-                tmp = [df_selected]
-                tmp.append(df_sorted.iloc[ii])
-                df_selected = pd.concat(tmp)
+                df_selected = pd.concat([df_selected, df_sorted.take([ii])], axis=0, ignore_index=True)
                 i += 1
         ii += 1
     df_selected = df_selected[['time', 'y', 'x', 'speed', 'z']]
