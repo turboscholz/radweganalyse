@@ -29,6 +29,14 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
 -t, --test            Start a test session to check if all functions and dependencies work as expected
 -c, --csv             If given, the coordinates, the current speed and the acceleration are exported as a csv file.
+
+Examples:
+
+Create a gpx file of name xyz_data.gpx and analyze the data, while Location.csv and Accelerometer.csv are available
+    radweganalyse.sh
+
+Do the same, but ignore data points from before 60 seconds and after 80 seconds of the measured data
+    radweganalyse.sh -s 60 -f 20
 EOF
   exit
 }
@@ -220,7 +228,7 @@ setup_input_vars()
         elif [ -f "$ACCELEROMETERFILE_WITHOUTG" ]; then
             ACCELEROMETERFILE="$ACCELEROMETERFILE_WITHOUTG"
         else
-            die "Please provide an Acceleration input file via -a option"
+            die "Acceleration input file not found. Add --help for more information."
         fi
     elif [ "$TEST" == "NO" ] && [ ! -f "$ACCELEROMETERFILE" ]; then
         die "Acceleration input file \"$ACCELEROMETERFILE\" not found - aborting"
