@@ -20,8 +20,9 @@ analysis of the bike path quality or into data which can be further analyzed.
 
 ## Setup
 
-In this repository you will find the experiment description file `radweganalyse.phyphox` which
-can be imported into the phyphox app via the below QR-Code:
+In this repository you will find the experiment description file
+[radweganalyse.phyphox](radweganalyse.phyphox) which can be imported into the phyphox
+app via the below QR-Code:
 
 <img src="https://github.com/turboscholz/radweganalyse/blob/master/qr_code_link.jpg?raw=true" width="263">
 
