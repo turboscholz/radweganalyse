@@ -27,8 +27,8 @@ app via the below QR-Code:
 <img src="https://github.com/turboscholz/radweganalyse/blob/master/qr_code_link.jpg?raw=true" width="263">
 
 For importing it, open the phyphox app, press the "+" button on the lower right and select
-the QR-Code shown here. This will create a new experiment entry for the parallel read-out
-of the GPS sensor and the acceleration sensor of your mobile phone.
+the QR-Code shown here. This will create a new experiment entry called "Radweganalyse",
+for the parallel read-out of the GPS sensor and the acceleration sensor of your mobile phone.
 
 After a ride with your bike, export the measured data as CSV files. These files are located
 on the smartphone as a zip archive. This zip needs to be copied over to your PC. Unzip it
