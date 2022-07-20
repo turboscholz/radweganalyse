@@ -18,11 +18,11 @@ The main purpose of the scripts above is to convert exported GPS data and accele
 data measured with the app [phyphox](https://phyphox.org/) into a GPX file for graphical
 analysis of the bike path quality or into data which can be further analyzed.
 
-As an example, here is a screenshot of the GpxSee program where a created GPX file from
-a measured bike path is shown. On the top side of the screenshot one can see the bike path.
-On the lower end the measured acceleration in z-direction is shown. Because of the quite
-different surface qualities (smooth vs. bumpy), there is a big difference in the
-measured data.
+As an example, here is a screenshot of the tool [GpxSee](https://github.com/tumic0/GPXSee)
+where a created GPX file from a measured bike path is shown. On the top side of the
+screenshot one can see the bike path. On the lower end the measured acceleration in
+z-direction is shown. Because of the quite different surface qualities (smooth vs. bumpy)
+there is a big difference in the measured acceleration.
 
 ![GpxSeeScreenShot](BikePathQualityGpxSee.png)
 
