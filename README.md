@@ -26,6 +26,10 @@ there is a big difference in the measured acceleration.
 
 ![GpxSeeScreenShot](BikePathQualityGpxSee.png)
 
+Note: GpxSee interpretes the data in the created gpx file as elevation, but actually it is
+the measured acceleration in z-direction as m/s². If those values increase, the surface
+quality of the bike path decreases.
+
 ## Setup
 
 In this repository you will find the experiment description file
