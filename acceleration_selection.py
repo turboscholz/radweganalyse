@@ -100,7 +100,7 @@ if __name__ == "__main__":
     try:
         import pandas as pd
     except ModuleNotFoundError as error:
-        print("You dont have module pandas installed. In Ubuntu, install with pip or do \"sudo apt install python3-pandas\".")
+        print("You dont have module pandas installed. In Ubuntu, install with pip via \"sudo pip install pandas\".")
         exit()
     main(sys.argv[1:])
 
