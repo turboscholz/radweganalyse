@@ -81,6 +81,6 @@ Currently, `radweganalyse.sh` depends on the following software:
 - sample1d: This tool is part of the Generic Mapping Tools (GMT) package. Install GMT with `sudo apt-get install gmt`
 - gpsbabel: This tool is a standalone program, also available in many linux distributions. Install with `sudo apt-get install gpsbabel`
 
-Other dependencies should be awailable on a standard Linux system.
+Other dependencies should be available on a standard Linux system.
 
 Further, the shell script calls a python script for data analysis. You need to install python3 on your system and the `pandas` package: `sudo pip install pandas`
