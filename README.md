@@ -84,3 +84,10 @@ Currently, `radweganalyse.sh` depends on the following software:
 Other dependencies should be available on a standard Linux system.
 
 Further, the shell script calls a python script for data analysis. You need to install python3 on your system and the `pandas` package: `sudo pip install pandas`
+
+## Media
+
+In late 2022, we published an article about the meassurement and analysis of
+cycle path surfaces using phyphox and the scripts in this repository. Read on in
+[Fahrradzukunft 35](https://fahrradzukunft.de/35/radweganalyse-per-smartphone)
+(in German).
