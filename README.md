@@ -60,7 +60,7 @@ the complete data set. Exporting the data as a csv file is also possible.
 The python script `acceleration_selection.py` is used automatically to find the maximum
 z-acceleration in the measured data.
 
-Executing `radweganalyse.py --help` will show you a additional script options.
+Executing `radweganalyse.sh --help` will show you a additional script options.
 
 Executing the awk script is also simple: `gawk -f phyphox2dat.awk` (within the same directory
 where the measured data files are located). This will generate two files: `Interpol.gpx`
