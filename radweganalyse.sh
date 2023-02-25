@@ -24,6 +24,7 @@ Dependencies: GMT's "sample1d", gpsbable, basic linux commands
 -m, --max             The number of gps positions this script should find where the acceleration in z direction is exceptional, default 5
     --maxonly         Only create a gpx file pointing to positions with maximum z-acceleration
     --no-analysis     No analysis of the data via python script, only create a gpx file. Cannot be set with "maxonly" at the same time.
+-e, --extract         Extract short track around each waypoint in a separate gpx file.
 -s, --start           The time in seconds in the measured data at which the analysis should start, default 0
 -f, --offset          The time offset in seconds after start when the analysis should end, default 0 (i.e. no time offset)
 -w, --window          The time window in seconds in which no other value with high z accelerations will be searched, default 2
@@ -133,6 +134,7 @@ parse_params() {
   TEST=NO
   START=0
   OFFSET=0
+  EXTRACT=NO
 
   while :; do
     case "${1-}" in
@@ -174,6 +176,8 @@ parse_params() {
       ANALYSIS=NO ;;
     -t | --test)
       TEST=YES ;;
+    -e | --extract)
+      EXTRACT=YES ;;
     -?*) die "Unknown option: $1" ;;
     *) break ;;
     esac
@@ -1613,6 +1617,39 @@ execute()
         else
             # Merge the GPX file with high Z-coords and the complete GPX path into one merged GPX output file
             gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -f $GPXPATHANDZACCFILE -o gpx -F $OUTPUTFILENAME
+        fi
+
+        if [ $EXTRACT == "YES" ]; then
+            echo "Extract maximum acceleration into seperate gpx files..."
+            WPTSCSVFILE=$(mktemp /tmp/XXXXXX)
+            COMPLETETRACKFILE=$(mktemp /tmp/XXXXXX)
+            TRACKTOWPTSFILE=$(mktemp /tmp/XXXXXX)
+            BASEFILENAME=$(basename --suffix=".gpx" $OUTPUTFILENAME)
+
+            gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -i gpx -o csv -F $WPTSCSVFILE
+            gpsbabel -i gpx -f $OUTPUTFILENAME -x nuketypes,waypoints -o gpx -F $COMPLETETRACKFILE
+            gpsbabel -i gpx -f $COMPLETETRACKFILE -x transform,wpt=trk -o gpx -F $TRACKTOWPTSFILE
+            gpsbabel -i gpx -f $TRACKTOWPTSFILE -x nuketypes,tracks -o gpx -F $TRACKTOWPTSFILE
+            II=1
+            while read LAT LON
+            do
+                echo "Generate ${OUTPUTFILENAME}_wpt00${II}.gpx"
+                SINGLEWPTFILE=$(mktemp /tmp/XXXXXX)
+                TRACKEXTRACTFILE=$(mktemp /tmp/XXXXXX)
+                LAT_CONV=$(echo $LAT | awk '{printf("%3.9f",$0);}')
+                LON_CONV=$(echo $LON | awk '{printf("%3.9f",$0);}')
+                gpsbabel -i gpx -f $ZMAXCOORDSGPXFILE -x radius,distance=0.01K,lat=$LAT_CONV,lon=$LON_CONV,nosort -o gpx -F $SINGLEWPTFILE
+                gpsbabel -i gpx -f $TRACKTOWPTSFILE -x radius,distance=0.01K,lat=$LAT_CONV,lon=$LON_CONV,nosort -o gpx -F $TRACKEXTRACTFILE
+                gpsbabel -i gpx -f $TRACKEXTRACTFILE -x transform,trk=wpt -o gpx -F $TRACKEXTRACTFILE
+                gpsbabel -i gpx -f $TRACKEXTRACTFILE -x nuketypes,waypoints -o gpx -F $TRACKEXTRACTFILE
+                gpsbabel -i gpx -f $TRACKEXTRACTFILE -i gpx -f $SINGLEWPTFILE -o gpx -F ${BASEFILENAME}_wpt00${II}.gpx
+                rm $SINGLEWPTFILE
+                II=$(expr $II + 1)
+            done < $WPTSCSVFILE
+            rm $TRACKEXTRACTFILE
+            rm $WPTSCSVFILE
+            rm $COMPLETETRACKFILE
+            rm $TRACKTOWPTSFILE
         fi
 
         rm $TIMECOORDSZACCSFILE
